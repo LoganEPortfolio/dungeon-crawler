@@ -10,6 +10,7 @@ import {
   PauseScreen,
   HUD,
   Arena,
+  TouchControls,
 } from './components';
 import { GAME_STATES, KEYS, WAVES } from './utils/constants';
 import { isDead } from './utils/helpers';
@@ -21,7 +22,7 @@ function Game() {
   const { isMobile, arenaScale } = useScreenSize();
 
   const [enemiesInRange, setEnemiesInRange] = useState([]);
-  const [showDebug, setShowDebug] = useState(true);
+  const [showDebug, setShowDebug] = useState(false); // Default off on mobile
 
   // Refs to avoid stale closures
   const stateRef = useRef(state);
@@ -35,13 +36,28 @@ function Game() {
 
   const isPlaying = state.gameState === GAME_STATES.PLAYING;
 
-  // Keyboard movement
+  // Keyboard movement (disabled on mobile - use touch instead)
   usePlayerMovement(
     useCallback((keys) => {
       actions.setKeysPressed(keys);
     }, [actions]),
-    isPlaying
+    isPlaying && !isMobile
   );
+
+  // Touch controls handlers
+  const handleTouchMove = useCallback((keys) => {
+    if (!isMobile) return;
+    // Preserve attack state when updating movement
+    actions.setKeysPressed({
+      ...keys,
+      attack: stateRef.current.keysPressed.attack,
+    });
+  }, [actions, isMobile]);
+
+  const handleTouchAttack = useCallback((isAttacking) => {
+    if (!isMobile) return;
+    actions.setKeysPressed({ attack: isAttacking });
+  }, [actions, isMobile]);
 
   // Pause key handler
   useEffect(() => {
@@ -49,15 +65,15 @@ function Game() {
       if (KEYS.PAUSE.includes(e.key)) {
         actions.togglePause();
       }
-      // Toggle debug with backtick
-      if (e.key === '`') {
+      // Toggle debug with backtick (desktop only)
+      if (e.key === '`' && !isMobile) {
         setShowDebug((prev) => !prev);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [actions]);
+  }, [actions, isMobile]);
 
   // Main game loop
   useGameLoop(
@@ -67,7 +83,7 @@ function Game() {
       actions.tick();
       actions.updateCooldowns(deltaTime);
 
-      // Update enemies in attack range for highlighting
+      // Update enemies in attack range
       if (currentState.player && currentState.enemies.length > 0) {
         const inRange = collision.getEnemiesInAttackRange(
           currentState.player,
@@ -213,36 +229,45 @@ function Game() {
           isMobile={isMobile}
         />
 
-        {/* Debug Panel */}
-        <div className={`debug-info ${showDebug ? '' : 'hidden'}`}>
-          <p>
-            Keys:{' '}
-            {Object.entries(state.keysPressed)
-              .filter(([, v]) => v)
-              .map(([k]) => k)
-              .join(', ') || 'none'}
-            {' | '}
-            Player: ({Math.round(state.player?.x ?? 0)}, {Math.round(state.player?.y ?? 0)})
-            {' | '}
-            Direction: {state.player?.direction}
-          </p>
-          <p>
-            In Range: {enemiesInRange.length}
-            {' | '}
-            Cooldown: {Math.round(state.attackCooldown)}ms
-            {' | '}
-            Spawned: {state.enemiesSpawned}/{state.totalEnemiesInRoom}
-            {' | '}
-            Killed: {state.enemiesKilled}/{state.totalEnemiesInRoom}
-          </p>
-          <p>
-            Screen: {isMobile ? 'Mobile' : 'Desktop'}
-            {' | '}
-            Scale: {arenaScale.toFixed(2)}
-            {' | '}
-            Press ` to toggle debug
-          </p>
-        </div>
+        {/* Touch Controls (mobile only) */}
+        {isMobile && (
+          <TouchControls
+            onMove={handleTouchMove}
+            onAttack={handleTouchAttack}
+            disabled={!isPlaying}
+          />
+        )}
+
+        {/* Debug Panel (desktop only, toggle with backtick) */}
+        {!isMobile && (
+          <div className={`debug-info ${showDebug ? '' : 'hidden'}`}>
+            <p>
+              Keys:{' '}
+              {Object.entries(state.keysPressed)
+                .filter(([, v]) => v)
+                .map(([k]) => k)
+                .join(', ') || 'none'}
+              {' | '}
+              Player: ({Math.round(state.player?.x ?? 0)}, {Math.round(state.player?.y ?? 0)})
+              {' | '}
+              Direction: {state.player?.direction}
+            </p>
+            <p>
+              In Range: {enemiesInRange.length}
+              {' | '}
+              Cooldown: {Math.round(state.attackCooldown)}ms
+              {' | '}
+              Spawned: {state.enemiesSpawned}/{state.totalEnemiesInRoom}
+              {' | '}
+              Killed: {state.enemiesKilled}/{state.totalEnemiesInRoom}
+            </p>
+            <p>
+              Scale: {arenaScale.toFixed(2)}
+              {' | '}
+              Press ` to toggle debug
+            </p>
+          </div>
+        )}
       </div>
     );
   };

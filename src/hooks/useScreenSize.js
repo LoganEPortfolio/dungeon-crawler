@@ -3,48 +3,68 @@ import { useState, useEffect } from 'react';
 import { ARENA } from '../utils/constants';
 
 export function useScreenSize() {
-  const [screenSize, setScreenSize] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-    isMobile: window.innerWidth < 768,
-    isTablet: window.innerWidth >= 768 && window.innerWidth < 1024,
-    isDesktop: window.innerWidth >= 1024,
-    // How much we need to scale the arena to fit the screen
-    arenaScale: calculateArenaScale(window.innerWidth, window.innerHeight),
-  });
+  const [screenSize, setScreenSize] = useState(() => getScreenData());
 
   useEffect(() => {
     const handleResize = () => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      setScreenSize({
-        width,
-        height,
-        isMobile: width < 768,
-        isTablet: width >= 768 && width < 1024,
-        isDesktop: width >= 1024,
-        arenaScale: calculateArenaScale(width, height),
-      });
+      setScreenSize(getScreenData());
     };
 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    // Also listen for orientation change on mobile
+    window.addEventListener('orientationchange', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
   }, []);
 
   return screenSize;
 }
 
-function calculateArenaScale(screenWidth, screenHeight) {
-  // Add padding so the arena doesn't touch the edges
-  const paddingX = 20;
-  const paddingY = 160; // Room for HUD above and controls below on mobile
+function getScreenData() {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const isMobile = width < 768;
+  const isTablet = width >= 768 && width < 1024;
+  const isDesktop = width >= 1024;
+  const isLandscape = width > height;
 
-  const scaleX = (screenWidth - paddingX) / ARENA.WIDTH;
-  const scaleY = (screenHeight - paddingY) / ARENA.HEIGHT;
+  // Calculate arena scale
+  // Mobile needs room for: HUD (60px) + Arena + Touch Controls (150px) + padding
+  // Desktop needs room for: HUD (60px) + Arena + Debug (80px) + padding
+  const hudHeight = isMobile ? 50 : 60;
+  const bottomUIHeight = isMobile ? 160 : 90; // Touch controls vs debug panel
+  const paddingX = isMobile ? 16 : 40;
+  const paddingY = 20;
 
-  // Use the smaller scale to fit both dimensions
-  // Cap at 1.0 so we never upscale on big screens
-  return Math.min(scaleX, scaleY, 1.0);
+  const availableWidth = width - (paddingX * 2);
+  const availableHeight = height - hudHeight - bottomUIHeight - (paddingY * 2);
+
+  const scaleX = availableWidth / ARENA.WIDTH;
+  const scaleY = availableHeight / ARENA.HEIGHT;
+
+  // Use smaller scale to fit both dimensions, cap at 1.0
+  const arenaScale = Math.min(scaleX, scaleY, 1.0);
+
+  // Calculate actual arena dimensions after scaling
+  const scaledArenaWidth = ARENA.WIDTH * arenaScale;
+  const scaledArenaHeight = ARENA.HEIGHT * arenaScale;
+
+  return {
+    width,
+    height,
+    isMobile,
+    isTablet,
+    isDesktop,
+    isLandscape,
+    arenaScale,
+    scaledArenaWidth,
+    scaledArenaHeight,
+    availableWidth,
+    availableHeight,
+  };
 }
 
 export default useScreenSize;
