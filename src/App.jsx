@@ -1,117 +1,110 @@
 // src/App.jsx
-import { useEffect } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { GameProvider, useGame } from './context/GameContext';
-import { GAME_STATES, ARENA } from './utils/constants';
+import { useGameLoop, usePlayerMovement, useCollision } from './hooks';
+import { GAME_STATES, ARENA, KEYS, WAVES } from './utils/constants';
 import {
   getHealthPercentage,
   getHealthBarColor,
   formatTime,
   isBossRoom,
+  isDead,
 } from './utils/helpers';
 import './App.css';
 
-// Separate component that uses the context
 function GameTest() {
   const { state, actions } = useGame();
+  const collision = useCollision();
+  const [debugInfo, setDebugInfo] = useState({
+    fps: 60,
+    enemiesInRange: 0,
+    closestEnemyDist: null,
+  });
 
-  // Handle keyboard input
+  const isPlaying = state.gameState === GAME_STATES.PLAYING;
+
+  // Handle keyboard input with custom hook
+  usePlayerMovement(
+    useCallback((keys) => {
+      actions.setKeysPressed(keys);
+    }, [actions]),
+    isPlaying
+  );
+
+  // Handle pause separately (works even when not playing)
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      switch (e.key.toLowerCase()) {
-        case 'w':
-        case 'arrowup':
-          actions.setKeysPressed({ up: true });
-          break;
-        case 's':
-        case 'arrowdown':
-          actions.setKeysPressed({ down: true });
-          break;
-        case 'a':
-        case 'arrowleft':
-          actions.setKeysPressed({ left: true });
-          break;
-        case 'd':
-        case 'arrowright':
-          actions.setKeysPressed({ right: true });
-          break;
-        case ' ':
-          e.preventDefault();
-          actions.setKeysPressed({ attack: true });
-          break;
-        case 'escape':
-        case 'p':
-          actions.togglePause();
-          break;
-        default:
-          break;
+    const handlePause = (e) => {
+      if (KEYS.PAUSE.includes(e.key)) {
+        actions.togglePause();
       }
     };
 
-    const handleKeyUp = (e) => {
-      switch (e.key.toLowerCase()) {
-        case 'w':
-        case 'arrowup':
-          actions.setKeysPressed({ up: false });
-          break;
-        case 's':
-        case 'arrowdown':
-          actions.setKeysPressed({ down: false });
-          break;
-        case 'a':
-        case 'arrowleft':
-          actions.setKeysPressed({ left: false });
-          break;
-        case 'd':
-        case 'arrowright':
-          actions.setKeysPressed({ right: false });
-          break;
-        case ' ':
-          actions.setKeysPressed({ attack: false });
-          break;
-        default:
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
+    window.addEventListener('keydown', handlePause);
+    return () => window.removeEventListener('keydown', handlePause);
   }, [actions]);
 
-  // Game loop
-  useEffect(() => {
-    if (state.gameState !== GAME_STATES.PLAYING) return;
-
-    const gameLoop = setInterval(() => {
+  // Main game loop with custom hook
+  useGameLoop(
+    useCallback((deltaTime) => {
       actions.tick();
-    }, 1000 / 60); // 60 FPS
+      actions.updateCooldowns(deltaTime);
 
-    return () => clearInterval(gameLoop);
-  }, [state.gameState, actions]);
+      // Update debug info
+      if (state.player && state.enemies.length > 0) {
+        const enemiesInRange = collision.getEnemiesInAttackRange(
+          state.player,
+          state.enemies,
+          50
+        );
+        const closest = collision.getClosestEnemy(state.player, state.enemies);
+        const closestDist = closest
+          ? collision.getEntityDistance(state.player, closest)
+          : null;
+
+        setDebugInfo({
+          fps: 60,
+          enemiesInRange: enemiesInRange.length,
+          closestEnemyDist: closestDist ? Math.round(closestDist) : null,
+        });
+      }
+    }, [actions, state.player, state.enemies, collision]),
+    isPlaying
+  );
 
   // Enemy spawning
   useEffect(() => {
-    if (state.gameState !== GAME_STATES.PLAYING) return;
-    if (state.enemiesSpawned >= state.enemiesRemaining + state.enemies.length) return;
+    if (!isPlaying) return;
 
-    const spawnInterval = setInterval(() => {
-      if (state.enemies.length < 5) { // Max 5 enemies at once
-        actions.spawnEnemy();
-      }
-    }, 1500);
+    const totalToSpawn =
+      state.enemiesRemaining + state.enemies.length - state.enemiesSpawned;
+    if (totalToSpawn <= 0) return;
 
-    return () => clearInterval(spawnInterval);
-  }, [state.gameState, state.enemiesSpawned, state.enemies.length, actions]);
+    // Don't spawn too many at once
+    const maxOnScreen = isBossRoom(state.currentRoom) ? 1 : 5;
+    if (state.enemies.length >= maxOnScreen) return;
+
+    const spawnTimer = setTimeout(() => {
+      actions.spawnEnemy();
+    }, WAVES.SPAWN_DELAY);
+
+    return () => clearTimeout(spawnTimer);
+  }, [
+    isPlaying,
+    state.enemiesRemaining,
+    state.enemiesSpawned,
+    state.enemies.length,
+    state.currentRoom,
+    actions,
+  ]);
 
   // Remove dead enemies
   useEffect(() => {
     state.enemies.forEach((enemy) => {
-      if (enemy.health <= 0) {
-        actions.removeEnemy(enemy.id);
+      if (isDead(enemy)) {
+        // Small delay for death effect
+        setTimeout(() => {
+          actions.removeEnemy(enemy.id);
+        }, 100);
       }
     });
   }, [state.enemies, actions]);
@@ -122,10 +115,21 @@ function GameTest() {
 
     const timer = setTimeout(() => {
       actions.nextRoom();
-    }, 2000);
+    }, WAVES.ROOM_CLEAR_DELAY);
 
     return () => clearTimeout(timer);
   }, [state.gameState, actions]);
+
+  // Clear message after delay
+  useEffect(() => {
+    if (!state.message) return;
+
+    const timer = setTimeout(() => {
+      actions.setMessage('');
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [state.message, actions]);
 
   // Render based on game state
   const renderGameState = () => {
@@ -133,8 +137,8 @@ function GameTest() {
       case GAME_STATES.START:
         return (
           <div className="game-screen start-screen">
-            <h2>Dungeon Crawler</h2>
-            <p>Survive 5 rooms and defeat the boss!</p>
+            <h2>⚔️ Dungeon Crawler ⚔️</h2>
+            <p>Survive 5 rooms and defeat the dragon boss!</p>
             <div className="controls-info">
               <p><strong>Controls:</strong></p>
               <p>WASD / Arrow Keys - Move</p>
@@ -148,7 +152,8 @@ function GameTest() {
       case GAME_STATES.PAUSED:
         return (
           <div className="game-screen pause-screen">
-            <h2>Paused</h2>
+            <h2>⏸️ Paused</h2>
+            <p>Room {state.currentRoom} | Score: {state.score}</p>
             <button onClick={actions.resumeGame}>Resume</button>
             <button onClick={actions.resetGame}>Quit to Menu</button>
           </div>
@@ -157,31 +162,35 @@ function GameTest() {
       case GAME_STATES.GAME_OVER:
         return (
           <div className="game-screen gameover-screen">
-            <h2>Game Over</h2>
+            <h2>💀 Game Over 💀</h2>
             <p>Room Reached: {state.currentRoom}</p>
-            <p>Score: {state.score}</p>
-            <p>Time: {formatTime(state.gameTime)}</p>
-            <button onClick={actions.resetGame}>Try Again</button>
+            <p>Final Score: {state.score}</p>
+            <p>Time Survived: {formatTime(state.gameTime)}</p>
+            <button onClick={actions.startGame}>Try Again</button>
+            <button onClick={actions.resetGame}>Main Menu</button>
           </div>
         );
 
       case GAME_STATES.VICTORY:
         return (
           <div className="game-screen victory-screen">
-            <h2>Victory!</h2>
-            <p>You defeated the boss!</p>
+            <h2>🏆 Victory! 🏆</h2>
+            <p>You defeated the dragon!</p>
             <p>Final Score: {state.score}</p>
             <p>Time: {formatTime(state.gameTime)}</p>
-            <button onClick={actions.resetGame}>Play Again</button>
+            <button onClick={actions.startGame}>Play Again</button>
+            <button onClick={actions.resetGame}>Main Menu</button>
           </div>
         );
 
       case GAME_STATES.ROOM_TRANSITION:
         return (
           <div className="game-screen transition-screen">
-            <h2>{state.message}</h2>
+            <h2>✨ {state.message} ✨</h2>
             <p>Prepare for Room {state.currentRoom + 1}...</p>
-            {isBossRoom(state.currentRoom + 1) && <p className="boss-warning">⚠️ BOSS INCOMING ⚠️</p>}
+            {isBossRoom(state.currentRoom + 1) && (
+              <p className="boss-warning">🐉 BOSS INCOMING 🐉</p>
+            )}
           </div>
         );
 
@@ -202,7 +211,7 @@ function GameTest() {
         <div className="hud">
           <div className="hud-left">
             <div className="health-section">
-              <span>HP</span>
+              <span className="health-label">❤️</span>
               <div className="health-bar large">
                 <div
                   className="health-bar-fill"
@@ -212,20 +221,25 @@ function GameTest() {
                   }}
                 />
               </div>
-              <span>{state.player?.health || 0}/{state.player?.maxHealth || 0}</span>
+              <span className="health-text">
+                {state.player?.health || 0}/{state.player?.maxHealth || 0}
+              </span>
             </div>
           </div>
           <div className="hud-center">
             <span className="room-indicator">
-              Room {state.currentRoom}/{ARENA.TOTAL || 5}
-              {isBossRoom(state.currentRoom) && ' 👑'}
+              {isBossRoom(state.currentRoom) ? '👑 ' : ''}
+              Room {state.currentRoom}/5
+              {isBossRoom(state.currentRoom) ? ' 👑' : ''}
             </span>
-            {state.message && <span className="game-message">{state.message}</span>}
+            {state.message && (
+              <span className="game-message">{state.message}</span>
+            )}
           </div>
           <div className="hud-right">
-            <span>Score: {state.score}</span>
-            <span>Time: {formatTime(state.gameTime)}</span>
-            <span>Enemies: {state.enemies.length}</span>
+            <span>🏆 {state.score}</span>
+            <span>⏱️ {formatTime(state.gameTime)}</span>
+            <span>👹 {state.enemies.length}/{state.enemiesRemaining}</span>
           </div>
         </div>
 
@@ -254,13 +268,32 @@ function GameTest() {
             />
           )}
 
+          {/* Attack Range Indicator (when attacking) */}
+          {state.player?.isAttacking && (
+            <div
+              className="attack-indicator"
+              style={{
+                left: state.player.x + state.player.size / 2,
+                top: state.player.y + state.player.size / 2,
+              }}
+            />
+          )}
+
           {/* Enemies */}
           {state.enemies.map((enemy) => {
-            const enemyHealthPct = getHealthPercentage(enemy.health, enemy.maxHealth);
+            const enemyHealthPct = getHealthPercentage(
+              enemy.health,
+              enemy.maxHealth
+            );
+            const isInRange =
+              state.player &&
+              collision.getEnemiesInAttackRange(state.player, [enemy], 50)
+                .length > 0;
+
             return (
               <div
                 key={enemy.id}
-                className={`entity enemy ${enemy.type} ${enemy.isHit ? 'hit' : ''}`}
+                className={`entity enemy ${enemy.type} ${enemy.isHit ? 'hit' : ''} ${isDead(enemy) ? 'dead' : ''}`}
                 style={{
                   width: enemy.size,
                   height: enemy.size,
@@ -272,7 +305,7 @@ function GameTest() {
                   className="enemy-sprite"
                   dangerouslySetInnerHTML={{ __html: enemy.sprite }}
                 />
-                <div className="enemy-health-bar">
+                <div className={`enemy-health-bar ${isInRange ? 'in-range' : ''}`}>
                   <div
                     className="enemy-health-fill"
                     style={{
@@ -284,24 +317,30 @@ function GameTest() {
               </div>
             );
           })}
-
-          {/* Attack indicator */}
-          {state.player?.isAttacking && (
-            <div
-              className="attack-indicator"
-              style={{
-                left: state.player.x + state.player.size / 2,
-                top: state.player.y + state.player.size / 2,
-              }}
-            />
-          )}
         </div>
 
         {/* Debug Info */}
         <div className="debug-info">
-          <p>Keys: {Object.entries(state.keysPressed).filter(([_, v]) => v).map(([k]) => k).join(', ') || 'none'}</p>
-          <p>Player Pos: ({Math.round(state.player?.x || 0)}, {Math.round(state.player?.y || 0)})</p>
-          <p>Attack Cooldown: {Math.round(state.attackCooldown)}ms</p>
+          <p>
+            Keys:{' '}
+            {Object.entries(state.keysPressed)
+              .filter(([_, v]) => v)
+              .map(([k]) => k)
+              .join(', ') || 'none'}
+          </p>
+          <p>
+            Player: ({Math.round(state.player?.x || 0)},{' '}
+            {Math.round(state.player?.y || 0)}) | Direction:{' '}
+            {state.player?.direction}
+          </p>
+          <p>
+            Enemies in Range: {debugInfo.enemiesInRange} | Closest:{' '}
+            {debugInfo.closestEnemyDist ?? 'N/A'}px
+          </p>
+          <p>
+            Attack Cooldown: {Math.round(state.attackCooldown)}ms | Spawned:{' '}
+            {state.enemiesSpawned}/{state.enemiesRemaining + state.enemies.length}
+          </p>
         </div>
       </div>
     );
@@ -309,13 +348,12 @@ function GameTest() {
 
   return (
     <div className="game-container">
-      <h1>Dungeon Crawler - Context Test</h1>
+      <h1>⚔️ Dungeon Crawler - Hooks Test ⚔️</h1>
       {renderGameState()}
     </div>
   );
 }
 
-// Main App with Provider
 function App() {
   return (
     <GameProvider>
