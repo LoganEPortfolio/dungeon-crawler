@@ -1,8 +1,25 @@
 // src/components/HUD.jsx
-import { getHealthPercentage, getHealthBarColor, formatTime, isBossRoom } from '../utils/helpers';
+import {
+  getHealthPercentage,
+  getHealthBarColor,
+  formatTime,
+  isBossRoom,
+} from '../utils/helpers';
 
-function HUD({ player, currentRoom, enemiesKilled, totalEnemies, score, gameTime, message, isMobile }) {
-  const healthPct = player ? getHealthPercentage(player.health, player.maxHealth) : 0;
+function HUD({
+  player,
+  currentRoom,
+  enemiesKilled,
+  totalEnemies,
+  score,
+  gameTime,
+  message,
+  isMobile,
+  onPause,
+}) {
+  const healthPct = player
+    ? getHealthPercentage(player.health, player.maxHealth)
+    : 0;
   const healthColor = getHealthBarColor(healthPct);
   const inBossRoom = isBossRoom(currentRoom);
 
@@ -28,23 +45,38 @@ function HUD({ player, currentRoom, enemiesKilled, totalEnemies, score, gameTime
         </div>
       </div>
 
-      {/* Center - Room */}
+      {/* Center - Room info */}
       <div className="hud-center">
         <span className="room-indicator">
           {inBossRoom && '👑 '}
           Room {currentRoom}/5
           {inBossRoom && ' 👑'}
         </span>
-        {message && <span className="game-message">{message}</span>}
+        {message && (
+          <span className="game-message">{message}</span>
+        )}
       </div>
 
-      {/* Right - Stats */}
+      {/* Right - Stats + Pause */}
       <div className="hud-right">
-        <span className="hud-stat">🏆 {score}</span>
-        <span className="hud-stat">⏱️ {formatTime(gameTime)}</span>
-        <span className="hud-stat">
-          👹 {enemiesKilled}/{totalEnemies}
-        </span>
+        <div className="hud-stats">
+          <span className="hud-stat">🏆 {score}</span>
+          <span className="hud-stat">⏱️ {formatTime(gameTime)}</span>
+          <span className="hud-stat">
+            👹 {enemiesKilled}/{totalEnemies}
+          </span>
+        </div>
+
+        {/* Mobile pause button */}
+        {isMobile && onPause && (
+          <button
+            className="hud-pause-btn"
+            onClick={onPause}
+            aria-label="Pause game"
+          >
+            ⏸️
+          </button>
+        )}
       </div>
 
     </div>

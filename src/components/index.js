@@ -9,3 +9,4 @@ export { default as Player } from './Player';
 export { default as Enemy } from './Enemy';
 export { default as Arena } from './Arena';
 export { default as TouchControls } from './TouchControls';
+export { default as Game } from './Game';

@@ -1378,3 +1378,69 @@
     display: none;
   }
 }
+
+/* ─── HUD Stats Group ────────────────────────────────────── */
+.hud-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+/* ─── HUD Mobile Pause Button ────────────────────────────── */
+.hud-pause-btn {
+  background: none;
+  border: 2px solid #4b5563;
+  border-radius: 8px;
+  color: #9ca3af;
+  font-size: 1.2rem;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 4px;
+  align-self: flex-end;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.hud-pause-btn:active {
+  background-color: #374151;
+  border-color: #6b7280;
+}
+
+/* ─── HUD Right with Pause ───────────────────────────────── */
+.hud-right {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ─── Mobile HUD Right Adjustments ──────────────────────── */
+@media (max-width: 768px) {
+  .hud-right {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hud-stats {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .hud-stat {
+    font-size: 0.7rem;
+  }
+
+  .hud-pause-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+    margin-top: 0;
+  }
+}
