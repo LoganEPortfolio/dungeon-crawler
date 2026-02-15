@@ -11,6 +11,8 @@ import {
   HUD,
   Arena,
   TouchControls,
+  PickupNotification,
+  PlayerBuffs,
 } from './index';
 import { GAME_STATES, KEYS, WAVES } from '../utils/constants';
 import { isDead, isBossRoom } from '../utils/helpers';
@@ -20,27 +22,21 @@ function Game() {
   const collision = useCollision();
   const { isMobile, arenaScale } = useScreenSize();
 
-  // Track which enemies are in attack range for UI highlighting
   const [enemiesInRange, setEnemiesInRange] = useState([]);
-
-  // Show debug panel on desktop
   const [showDebug, setShowDebug] = useState(false);
 
-  // Refs to avoid stale closures in game loop
   const stateRef = useRef(state);
   const lastSpawnTimeRef = useRef(0);
   const removingEnemiesRef = useRef(new Set());
 
-  // Always keep stateRef pointing at latest state
   useEffect(() => {
     stateRef.current = state;
   });
 
-  // ─── Derived state ──────────────────────────────────────────────
   const isPlaying = state.gameState === GAME_STATES.PLAYING;
   const isInBossRoom = isBossRoom(state.currentRoom);
 
-  // ─── Keyboard: Movement (desktop only) ─────────────────────────
+  // Keyboard movement (desktop)
   usePlayerMovement(
     useCallback((keys) => {
       actions.setKeysPressed(keys);
@@ -48,7 +44,7 @@ function Game() {
     isPlaying && !isMobile
   );
 
-  // ─── Keyboard: Pause + Debug toggle ────────────────────────────
+  // Pause + debug toggle
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (KEYS.PAUSE.includes(e.key)) {
@@ -63,34 +59,30 @@ function Game() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [actions, isMobile]);
 
-  // ─── Touch: Movement ────────────────────────────────────────────
+  // Touch movement
   const handleTouchMove = useCallback((keys) => {
     if (!isMobile) return;
-    // Merge movement keys while preserving current attack state
     actions.setKeysPressed({
       ...keys,
       attack: stateRef.current.keysPressed.attack,
     });
   }, [actions, isMobile]);
 
-  // ─── Touch: Attack ──────────────────────────────────────────────
+  // Touch attack
   const handleTouchAttack = useCallback((isAttacking) => {
     if (!isMobile) return;
     actions.setKeysPressed({ attack: isAttacking });
   }, [actions, isMobile]);
 
-  // ─── Main Game Loop ─────────────────────────────────────────────
+  // Main game loop
   useGameLoop(
     useCallback((deltaTime) => {
       const s = stateRef.current;
 
-      // Core tick - movement, attacks, collisions
       actions.tick();
-
-      // Cooldown timers
       actions.updateCooldowns(deltaTime);
 
-      // Update which enemies are highlighted (in attack range)
+      // Update enemies in range
       if (s.player && s.enemies.length > 0) {
         const inRange = collision.getEnemiesInAttackRange(
           s.player,
@@ -102,7 +94,7 @@ function Game() {
         setEnemiesInRange([]);
       }
 
-      // ── Enemy Spawning ─────────────────────────────────────────
+      // Enemy spawning
       const now = Date.now();
       const maxOnScreen = isInBossRoom ? 1 : 5;
       const canSpawn = s.enemiesSpawned < s.totalEnemiesInRoom;
@@ -117,14 +109,13 @@ function Game() {
     isPlaying
   );
 
-  // ─── Remove Dead Enemies ────────────────────────────────────────
+  // Remove dead enemies
   useEffect(() => {
     const deadEnemies = state.enemies.filter(
       (e) => isDead(e) && !removingEnemiesRef.current.has(e.id)
     );
 
     deadEnemies.forEach((enemy) => {
-      // Track that we are already removing this enemy
       removingEnemiesRef.current.add(enemy.id);
       setTimeout(() => {
         actions.removeEnemy(enemy.id);
@@ -133,7 +124,7 @@ function Game() {
     });
   }, [state.enemies, actions]);
 
-  // ─── Room Transition Timer ──────────────────────────────────────
+  // Room transition
   useEffect(() => {
     if (state.gameState !== GAME_STATES.ROOM_TRANSITION) return;
 
@@ -144,7 +135,7 @@ function Game() {
     return () => clearTimeout(timer);
   }, [state.gameState, actions]);
 
-  // ─── Clear Message After Delay ──────────────────────────────────
+  // Clear message
   useEffect(() => {
     if (!state.message) return;
 
@@ -155,14 +146,24 @@ function Game() {
     return () => clearTimeout(timer);
   }, [state.message, actions]);
 
-  // ─── Reset Spawn Tracking on Room Change ────────────────────────
+  // Reset on room change
   useEffect(() => {
     lastSpawnTimeRef.current = 0;
     removingEnemiesRef.current.clear();
   }, [state.currentRoom]);
 
-  // ─── Render Helpers ─────────────────────────────────────────────
+  // Clear pickup notification
+  useEffect(() => {
+    if (!state.recentPickup) return;
 
+    const timer = setTimeout(() => {
+      actions.clearRecentPickup();
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [state.recentPickup, actions]);
+
+  // Render debug
   const renderDebug = () => {
     if (isMobile || !showDebug) return null;
 
@@ -187,14 +188,23 @@ function Game() {
           {' | '}
           Spawned: {state.enemiesSpawned}/{state.totalEnemiesInRoom}
           {' | '}
-          Killed: {state.enemiesKilled}/{state.totalEnemiesInRoom}
+          Items: {state.items.length}
           {' | '}
-          On Screen: {state.enemies.length}
+          Obstacles: {state.obstacles.length}
+        </p>
+        <p>
+          Weapon: {state.player?.weapon?.name || 'None'}
+          {' | '}
+          Buffs: {state.player?.activeBuffs?.length || 0}
+          {' | '}
+          Speed: {state.player?.speed?.toFixed(1)}
+          {' | '}
+          Damage: {state.player?.damage}
+          {' | '}
+          Defense: {state.player?.defense?.toFixed(2) || 1}
         </p>
         <p>
           Room: {state.currentRoom}
-          {' | '}
-          State: {state.gameState}
           {' | '}
           Scale: {arenaScale.toFixed(2)}
           {' | '}
@@ -204,6 +214,7 @@ function Game() {
     );
   };
 
+  // Render playing state
   const renderPlaying = () => (
     <div className="game-playing">
       <HUD
@@ -218,12 +229,26 @@ function Game() {
         onPause={actions.togglePause}
       />
 
+      {/* Player buffs display */}
+      <PlayerBuffs
+        buffs={state.player?.activeBuffs || []}
+        weapon={state.player?.weapon}
+      />
+
       <Arena
         player={state.player}
         enemies={state.enemies}
+        items={state.items}
+        obstacles={state.obstacles}
         enemiesInAttackRange={enemiesInRange}
         scale={arenaScale}
         isMobile={isMobile}
+      />
+
+      {/* Pickup notification */}
+      <PickupNotification
+        pickup={state.recentPickup}
+        onComplete={actions.clearRecentPickup}
       />
 
       {isMobile && (
@@ -238,16 +263,11 @@ function Game() {
     </div>
   );
 
-  // ─── Main Render ────────────────────────────────────────────────
+  // Main render
   const renderByState = () => {
     switch (state.gameState) {
-
       case GAME_STATES.START:
-        return (
-          <StartScreen
-            onStart={actions.startGame}
-          />
-        );
+        return <StartScreen onStart={actions.startGame} />;
 
       case GAME_STATES.PLAYING:
         return renderPlaying();

@@ -5,18 +5,24 @@ import { getHealthPercentage, getHealthBarColor, isDead } from '../utils/helpers
 const Enemy = memo(function Enemy({ enemy, isInAttackRange }) {
   if (!enemy) return null;
 
-  const { id, x, y, size, sprite, type, health, maxHealth, isHit } = enemy;
+  const { id, x, y, size, sprite, type, health, maxHealth, isHit, statusEffects } = enemy;
   const healthPct = getHealthPercentage(health, maxHealth);
   const healthColor = getHealthBarColor(healthPct);
   const dead = isDead(enemy);
+
+  // Check for status effects
+  const isBurning = statusEffects?.some(e => e.type === 'burn');
+  const isSlowed = statusEffects?.some(e => e.type === 'slow');
 
   // Build class names
   const classNames = [
     'entity',
     'enemy',
-    type, // 'enemy' or 'boss'
+    type,
     isHit ? 'hit' : '',
     dead ? 'dead' : '',
+    isBurning ? 'burning' : '',
+    isSlowed ? 'slowed' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -30,7 +36,6 @@ const Enemy = memo(function Enemy({ enemy, isInAttackRange }) {
       }}
       data-enemy-id={id}
     >
-      {/* Enemy sprite */}
       <div
         className="enemy-sprite"
         dangerouslySetInnerHTML={{ __html: sprite }}
@@ -50,6 +55,14 @@ const Enemy = memo(function Enemy({ enemy, isInAttackRange }) {
       {/* Boss label */}
       {type === 'boss' && (
         <div className="boss-label">BOSS</div>
+      )}
+
+      {/* Status effect indicators */}
+      {(isBurning || isSlowed) && (
+        <div className="status-indicators">
+          {isBurning && <span className="status-icon">🔥</span>}
+          {isSlowed && <span className="status-icon">❄️</span>}
+        </div>
       )}
     </div>
   );

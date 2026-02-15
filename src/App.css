@@ -1444,3 +1444,268 @@
     margin-top: 0;
   }
 }
+
+/* ─── Items ──────────────────────────────────────────────── */
+.item {
+  position: absolute;
+  z-index: 4;
+  animation: item-float 1.5s ease-in-out infinite;
+}
+
+.item-sprite {
+  width: 100%;
+  height: 100%;
+}
+
+.item-sprite svg {
+  width: 100%;
+  height: 100%;
+}
+
+.item-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: item-glow-pulse 1s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+/* Rarity colors */
+.item-common .item-glow {
+  background: radial-gradient(circle, #9ca3af 0%, transparent 70%);
+}
+
+.item-uncommon .item-glow {
+  background: radial-gradient(circle, #22c55e 0%, transparent 70%);
+}
+
+.item-rare .item-glow {
+  background: radial-gradient(circle, #3b82f6 0%, transparent 70%);
+}
+
+/* Category highlights */
+.item-healing {
+  filter: drop-shadow(0 0 4px #ef4444);
+}
+
+.item-powerup {
+  filter: drop-shadow(0 0 4px #8b5cf6);
+}
+
+.item-weapon {
+  filter: drop-shadow(0 0 6px #fbbf24);
+}
+
+@keyframes item-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes item-glow-pulse {
+  from { opacity: 0.3; transform: scale(0.9); }
+  to { opacity: 0.6; transform: scale(1.1); }
+}
+
+/* ─── Obstacles ──────────────────────────────────────────── */
+.obstacle {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.obstacle-sprite {
+  width: 100%;
+  height: 100%;
+}
+
+.obstacle-sprite svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Fire pit animation */
+.obstacle-fire_pit {
+  animation: fire-flicker 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes fire-flicker {
+  from { filter: brightness(0.9); }
+  to { filter: brightness(1.1); }
+}
+
+/* Spike trap */
+.obstacle-spike_trap {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Poison pool animation */
+.obstacle-poison_pool {
+  animation: poison-bubble 2s ease-in-out infinite;
+}
+
+@keyframes poison-bubble {
+  0%, 100% { filter: brightness(1) hue-rotate(0deg); }
+  50% { filter: brightness(1.1) hue-rotate(10deg); }
+}
+
+/* ─── Pickup Notification ────────────────────────────────── */
+.pickup-notification {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+  border: 2px solid #4b5563;
+  z-index: 100;
+  animation: pickup-pop 0.3s ease-out, pickup-fade 1.5s ease-in forwards;
+  animation-delay: 0s, 1s;
+}
+
+.pickup-healing {
+  border-color: #ef4444;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.pickup-powerup {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.pickup-weapon {
+  border-color: #fbbf24;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+}
+
+.pickup-icon {
+  font-size: 1.5rem;
+}
+
+.pickup-name {
+  color: #f9fafb;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+@keyframes pickup-pop {
+  0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+@keyframes pickup-fade {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ─── Player Buffs Display ───────────────────────────────── */
+.player-buffs {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 6px 0;
+  flex-wrap: wrap;
+}
+
+.buff-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid #4b5563;
+}
+
+.buff-item.weapon-buff {
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.2);
+}
+
+.buff-icon {
+  font-size: 1rem;
+}
+
+.buff-name {
+  color: #fbbf24;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.buff-timer {
+  color: #9ca3af;
+  font-size: 0.75rem;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ─── Enemy Status Effects ───────────────────────────────── */
+.entity.enemy.burning {
+  animation: burn-effect 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes burn-effect {
+  from { filter: brightness(1) sepia(0); }
+  to { filter: brightness(1.3) sepia(0.5) saturate(2); }
+}
+
+.entity.enemy.slowed {
+  filter: brightness(0.8) saturate(0.5) hue-rotate(180deg);
+}
+
+/* ─── Mobile Adjustments ─────────────────────────────────── */
+@media (max-width: 768px) {
+  .player-buffs {
+    padding: 4px 8px;
+  }
+
+  .buff-item {
+    padding: 3px 8px;
+  }
+
+  .buff-icon {
+    font-size: 0.9rem;
+  }
+
+  .buff-name,
+  .buff-timer {
+    font-size: 0.7rem;
+  }
+
+  .pickup-notification {
+    top: 15%;
+    padding: 10px 18px;
+  }
+
+  .pickup-icon {
+    font-size: 1.2rem;
+  }
+
+  .pickup-name {
+    font-size: 0.9rem;
+  }
+}
+
+/* ─── Status Indicators ──────────────────────────────────── */
+.status-indicators {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+}
+
+.status-icon {
+  font-size: 0.7rem;
+  animation: status-bounce 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes status-bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-2px); }
+}

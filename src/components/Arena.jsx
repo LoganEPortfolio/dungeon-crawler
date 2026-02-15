@@ -3,15 +3,18 @@ import { memo } from 'react';
 import { ARENA } from '../utils/constants';
 import Player from './Player';
 import Enemy from './Enemy';
+import Item from './Item';
+import Obstacle from './Obstacle';
 
 const Arena = memo(function Arena({
   player,
   enemies,
+  items,
+  obstacles,
   enemiesInAttackRange,
   scale,
   isMobile,
 }) {
-  // Create a Set for quick lookup of enemies in range
   const inRangeSet = new Set(enemiesInAttackRange);
 
   return (
@@ -37,11 +40,15 @@ const Arena = memo(function Arena({
         <div className="arena-corner bl" />
         <div className="arena-corner br" />
 
-        {/* Player */}
-        <Player
-          player={player}
-          showAttackIndicator={true}
-        />
+        {/* Obstacles (render first, below everything) */}
+        {obstacles?.map((obstacle) => (
+          <Obstacle key={obstacle.id} obstacle={obstacle} />
+        ))}
+
+        {/* Items */}
+        {items?.map((item) => (
+          <Item key={item.id} item={item} />
+        ))}
 
         {/* Enemies */}
         {enemies.map((enemy) => (
@@ -52,8 +59,14 @@ const Arena = memo(function Arena({
           />
         ))}
 
+        {/* Player (render last, on top) */}
+        <Player
+          player={player}
+          showAttackIndicator={true}
+        />
+
         {/* Mobile touch hint */}
-        {isMobile && enemies.length === 0 && (
+        {isMobile && enemies.length === 0 && items?.length === 0 && (
           <div className="arena-touch-hint">
             Use joystick to move, button to attack
           </div>

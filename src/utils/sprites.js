@@ -1,5 +1,3 @@
-// src/utils/sprites.js
-
 // Player - A warrior/knight figure
 export const PLAYER_SPRITE = `
 <svg viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
@@ -178,4 +176,220 @@ export const getRandomEnemySprite = () => {
 export const getEnemySpriteByDifficulty = (room) => {
   const index = Math.min(room - 1, ENEMY_SPRITES.length - 1);
   return ENEMY_SPRITES[index];
+};
+
+
+// ─── ITEM SPRITES ───────────────────────────────────────────────
+
+// Apple
+export const ITEM_APPLE_SPRITE = `
+<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+  <!-- Apple body -->
+  <ellipse cx="10" cy="12" rx="8" ry="7" fill="#ef4444"/>
+  <ellipse cx="7" cy="11" rx="3" ry="4" fill="#f87171" opacity="0.6"/>
+  <!-- Stem -->
+  <rect x="9" y="3" width="2" height="4" fill="#854d0e" rx="1"/>
+  <!-- Leaf -->
+  <ellipse cx="13" cy="5" rx="3" ry="2" fill="#22c55e" transform="rotate(30, 13, 5)"/>
+</svg>
+`;
+
+// Meat
+export const ITEM_MEAT_SPRITE = `
+<svg viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bone -->
+  <rect x="2" y="9" width="18" height="4" fill="#fef3c7" rx="2"/>
+  <circle cx="3" cy="11" r="3" fill="#fef3c7"/>
+  <circle cx="19" cy="11" r="3" fill="#fef3c7"/>
+  <!-- Meat -->
+  <ellipse cx="11" cy="11" rx="7" ry="5" fill="#dc2626"/>
+  <ellipse cx="9" cy="10" rx="3" ry="2" fill="#ef4444" opacity="0.7"/>
+</svg>
+`;
+
+// Health Potion
+export const ITEM_HEALTH_POTION_SPRITE = `
+<svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bottle -->
+  <rect x="5" y="6" width="8" height="10" fill="#dc2626" rx="2"/>
+  <rect x="6" y="3" width="6" height="4" fill="#9ca3af"/>
+  <rect x="7" y="1" width="4" height="3" fill="#6b7280"/>
+  <!-- Liquid shine -->
+  <rect x="6" y="8" width="2" height="6" fill="#ef4444" opacity="0.6" rx="1"/>
+  <!-- Cross symbol -->
+  <rect x="8" y="9" width="2" height="5" fill="white"/>
+  <rect x="6.5" y="10.5" width="5" height="2" fill="white"/>
+</svg>
+`;
+
+// Speed Potion
+export const ITEM_SPEED_POTION_SPRITE = `
+<svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bottle -->
+  <rect x="5" y="6" width="8" height="10" fill="#3b82f6" rx="2"/>
+  <rect x="6" y="3" width="6" height="4" fill="#9ca3af"/>
+  <rect x="7" y="1" width="4" height="3" fill="#6b7280"/>
+  <!-- Liquid shine -->
+  <rect x="6" y="8" width="2" height="6" fill="#60a5fa" opacity="0.6" rx="1"/>
+  <!-- Lightning symbol -->
+  <polygon points="10,8 8,11 9.5,11 8,15 12,10 10,10 11,8" fill="#fbbf24"/>
+</svg>
+`;
+
+// Strength Potion
+export const ITEM_STRENGTH_POTION_SPRITE = `
+<svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bottle -->
+  <rect x="5" y="6" width="8" height="10" fill="#f97316" rx="2"/>
+  <rect x="6" y="3" width="6" height="4" fill="#9ca3af"/>
+  <rect x="7" y="1" width="4" height="3" fill="#6b7280"/>
+  <!-- Liquid shine -->
+  <rect x="6" y="8" width="2" height="6" fill="#fb923c" opacity="0.6" rx="1"/>
+  <!-- Fist/strength symbol -->
+  <circle cx="9" cy="11" r="3" fill="#fbbf24"/>
+  <rect x="8" y="9" width="2" height="2" fill="#fbbf24"/>
+</svg>
+`;
+
+// Shield Potion
+export const ITEM_SHIELD_POTION_SPRITE = `
+<svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bottle -->
+  <rect x="5" y="6" width="8" height="10" fill="#8b5cf6" rx="2"/>
+  <rect x="6" y="3" width="6" height="4" fill="#9ca3af"/>
+  <rect x="7" y="1" width="4" height="3" fill="#6b7280"/>
+  <!-- Liquid shine -->
+  <rect x="6" y="8" width="2" height="6" fill="#a78bfa" opacity="0.6" rx="1"/>
+  <!-- Shield symbol -->
+  <path d="M9 8 L6 10 L6 13 L9 15 L12 13 L12 10 Z" fill="#c4b5fd" stroke="white" stroke-width="0.5"/>
+</svg>
+`;
+
+// Fire Sword
+export const ITEM_FIRE_SWORD_SPRITE = `
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- Blade -->
+  <polygon points="12,1 14,15 12,17 10,15" fill="#9ca3af"/>
+  <polygon points="12,1 13,12 12,14 11,12" fill="#d1d5db"/>
+  <!-- Fire effect -->
+  <ellipse cx="12" cy="6" rx="3" ry="5" fill="#f97316" opacity="0.7"/>
+  <ellipse cx="12" cy="5" rx="2" ry="3" fill="#fbbf24" opacity="0.8"/>
+  <!-- Guard -->
+  <rect x="7" y="15" width="10" height="2" fill="#854d0e" rx="1"/>
+  <!-- Handle -->
+  <rect x="10" y="17" width="4" height="5" fill="#78350f"/>
+  <circle cx="12" cy="22" r="2" fill="#f97316"/>
+</svg>
+`;
+
+// Ice Axe
+export const ITEM_ICE_AXE_SPRITE = `
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- Handle -->
+  <rect x="11" y="8" width="3" height="14" fill="#78350f"/>
+  <!-- Axe head -->
+  <path d="M6 4 Q4 8 6 12 L14 10 L14 6 Z" fill="#60a5fa"/>
+  <path d="M7 5 Q6 8 7 10 L12 9 L12 7 Z" fill="#93c5fd" opacity="0.6"/>
+  <!-- Ice crystals -->
+  <polygon points="4,6 2,8 4,10 6,8" fill="#bfdbfe"/>
+  <polygon points="8,2 7,4 9,4" fill="#bfdbfe"/>
+  <!-- Binding -->
+  <rect x="10" y="10" width="5" height="2" fill="#a16207"/>
+</svg>
+`;
+
+// Lightning Staff
+export const ITEM_LIGHTNING_STAFF_SPRITE = `
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- Staff -->
+  <rect x="10" y="6" width="4" height="16" fill="#6b21a8" rx="2"/>
+  <rect x="11" y="8" width="2" height="12" fill="#7c3aed"/>
+  <!-- Orb -->
+  <circle cx="12" cy="5" r="4" fill="#fbbf24"/>
+  <circle cx="12" cy="5" r="2.5" fill="#fef3c7"/>
+  <!-- Lightning -->
+  <polygon points="12,1 10,5 11,5 9,9 14,4 12,4 13,1" fill="#fbbf24"/>
+  <!-- Rings -->
+  <ellipse cx="12" cy="10" rx="3" ry="1" fill="#a855f7" opacity="0.6"/>
+  <ellipse cx="12" cy="14" rx="2.5" ry="0.8" fill="#a855f7" opacity="0.4"/>
+</svg>
+`;
+
+// Map item types to sprites
+export const ITEM_SPRITES = {
+  APPLE: ITEM_APPLE_SPRITE,
+  MEAT: ITEM_MEAT_SPRITE,
+  HEALTH_POTION: ITEM_HEALTH_POTION_SPRITE,
+  SPEED_POTION: ITEM_SPEED_POTION_SPRITE,
+  STRENGTH_POTION: ITEM_STRENGTH_POTION_SPRITE,
+  SHIELD_POTION: ITEM_SHIELD_POTION_SPRITE,
+  FIRE_SWORD: ITEM_FIRE_SWORD_SPRITE,
+  ICE_AXE: ITEM_ICE_AXE_SPRITE,
+  LIGHTNING_STAFF: ITEM_LIGHTNING_STAFF_SPRITE,
+};
+
+// ─── OBSTACLE SPRITES ───────────────────────────────────────────
+
+// Fire Pit
+export const OBSTACLE_FIRE_PIT_SPRITE = `
+<svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pit base -->
+  <ellipse cx="25" cy="40" rx="22" ry="8" fill="#374151"/>
+  <ellipse cx="25" cy="38" rx="18" ry="6" fill="#1f2937"/>
+  <!-- Fire flames -->
+  <ellipse cx="25" cy="30" rx="12" ry="15" fill="#f97316" opacity="0.9"/>
+  <ellipse cx="22" cy="28" rx="6" ry="12" fill="#fb923c" opacity="0.8"/>
+  <ellipse cx="28" cy="26" rx="5" ry="10" fill="#fbbf24" opacity="0.9"/>
+  <ellipse cx="25" cy="24" rx="4" ry="8" fill="#fef3c7" opacity="0.7"/>
+  <!-- Embers -->
+  <circle cx="18" cy="35" r="2" fill="#fbbf24" opacity="0.8"/>
+  <circle cx="32" cy="33" r="1.5" fill="#fb923c" opacity="0.7"/>
+  <circle cx="25" cy="20" r="1" fill="white" opacity="0.6"/>
+</svg>
+`;
+
+// Spike Trap
+export const OBSTACLE_SPIKE_TRAP_SPRITE = `
+<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- Base plate -->
+  <rect x="2" y="30" width="36" height="8" fill="#4b5563" rx="2"/>
+  <rect x="4" y="32" width="32" height="4" fill="#374151"/>
+  <!-- Spikes -->
+  <polygon points="6,30 9,10 12,30" fill="#9ca3af"/>
+  <polygon points="14,30 17,8 20,30" fill="#9ca3af"/>
+  <polygon points="22,30 25,10 28,30" fill="#9ca3af"/>
+  <polygon points="30,30 33,12 36,30" fill="#9ca3af"/>
+  <!-- Spike highlights -->
+  <polygon points="7,28 9,12 10,28" fill="#d1d5db" opacity="0.5"/>
+  <polygon points="15,28 17,10 18,28" fill="#d1d5db" opacity="0.5"/>
+  <polygon points="23,28 25,12 26,28" fill="#d1d5db" opacity="0.5"/>
+  <polygon points="31,28 33,14 34,28" fill="#d1d5db" opacity="0.5"/>
+</svg>
+`;
+
+// Poison Pool
+export const OBSTACLE_POISON_POOL_SPRITE = `
+<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pool shape -->
+  <ellipse cx="30" cy="35" rx="28" ry="18" fill="#166534" opacity="0.8"/>
+  <ellipse cx="30" cy="33" rx="24" ry="14" fill="#22c55e" opacity="0.6"/>
+  <ellipse cx="25" cy="32" rx="12" ry="8" fill="#4ade80" opacity="0.4"/>
+  <!-- Bubbles -->
+  <circle cx="20" cy="35" r="3" fill="#86efac" opacity="0.7"/>
+  <circle cx="35" cy="30" r="2" fill="#86efac" opacity="0.6"/>
+  <circle cx="40" cy="38" r="2.5" fill="#86efac" opacity="0.5"/>
+  <circle cx="25" cy="28" r="1.5" fill="#bbf7d0" opacity="0.8"/>
+  <circle cx="38" cy="35" r="1" fill="white" opacity="0.4"/>
+  <!-- Skull warning -->
+  <circle cx="30" cy="35" r="5" fill="#fef3c7" opacity="0.3"/>
+  <circle cx="28" cy="34" r="1" fill="#1a1a2e" opacity="0.5"/>
+  <circle cx="32" cy="34" r="1" fill="#1a1a2e" opacity="0.5"/>
+</svg>
+`;
+
+// Map obstacle types to sprites
+export const OBSTACLE_SPRITES = {
+  FIRE_PIT: OBSTACLE_FIRE_PIT_SPRITE,
+  SPIKE_TRAP: OBSTACLE_SPIKE_TRAP_SPRITE,
+  POISON_POOL: OBSTACLE_POISON_POOL_SPRITE,
 };
