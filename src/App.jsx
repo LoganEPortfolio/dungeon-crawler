@@ -15,18 +15,25 @@ import './App.css';
 function GameTest() {
   const { state, actions } = useGame();
   const collision = useCollision();
+
   const [debugInfo, setDebugInfo] = useState({
-    fps: 60,
     enemiesInRange: 0,
     closestEnemyDist: null,
   });
-  
-  // Use ref to track last spawn time
-  const lastSpawnTime = useRef(0);
+
+  // Refs to avoid stale closures in game loop
+  const stateRef = useRef(state);
+  const lastSpawnTimeRef = useRef(0);
+  const removingEnemiesRef = useRef(new Set());
+
+  // Keep stateRef current every render
+  useEffect(() => {
+    stateRef.current = state;
+  });
 
   const isPlaying = state.gameState === GAME_STATES.PLAYING;
 
-  // Handle keyboard input with custom hook
+  // Player movement hook - enabled only when playing
   usePlayerMovement(
     useCallback((keys) => {
       actions.setKeysPressed(keys);
@@ -34,80 +41,84 @@ function GameTest() {
     isPlaying
   );
 
-  // Handle pause separately (works even when not playing)
+  // Pause key - works in any state
   useEffect(() => {
     const handlePause = (e) => {
       if (KEYS.PAUSE.includes(e.key)) {
         actions.togglePause();
       }
     };
-
     window.addEventListener('keydown', handlePause);
     return () => window.removeEventListener('keydown', handlePause);
   }, [actions]);
 
-  // Main game loop with custom hook
+  // Main game loop - actions is stable so this never re-creates unnecessarily
   useGameLoop(
     useCallback((deltaTime) => {
+      // Read state from ref to avoid stale closure without adding state to deps
+      const currentState = stateRef.current;
+
       actions.tick();
       actions.updateCooldowns(deltaTime);
 
       // Update debug info
-      if (state.player && state.enemies.length > 0) {
-        const enemiesInRange = collision.getEnemiesInAttackRange(
-          state.player,
-          state.enemies,
+      if (currentState.player && currentState.enemies.length > 0) {
+        const inRange = collision.getEnemiesInAttackRange(
+          currentState.player,
+          currentState.enemies,
           50
         );
-        const closest = collision.getClosestEnemy(state.player, state.enemies);
-        const closestDist = closest
-          ? collision.getEntityDistance(state.player, closest)
-          : null;
-
+        const closest = collision.getClosestEnemy(
+          currentState.player,
+          currentState.enemies
+        );
         setDebugInfo({
-          fps: 60,
-          enemiesInRange: enemiesInRange.length,
-          closestEnemyDist: closestDist ? Math.round(closestDist) : null,
+          enemiesInRange: inRange.length,
+          closestEnemyDist: closest
+            ? Math.round(collision.getEntityDistance(currentState.player, closest))
+            : null,
         });
       } else {
-        setDebugInfo((prev) => ({
-          ...prev,
-          enemiesInRange: 0,
-          closestEnemyDist: null,
-        }));
+        setDebugInfo({ enemiesInRange: 0, closestEnemyDist: null });
       }
 
-      // Handle enemy spawning inside game loop
+      // Enemy spawning inside game loop using ref values - no extra deps needed
       const now = Date.now();
-      const canSpawn = state.enemiesSpawned < state.totalEnemiesInRoom;
-      const maxOnScreen = isBossRoom(state.currentRoom) ? 1 : 5;
-      const roomForMore = state.enemies.length < maxOnScreen;
-      const spawnCooldownPassed = now - lastSpawnTime.current > WAVES.SPAWN_DELAY;
+      const maxOnScreen = isBossRoom(currentState.currentRoom) ? 1 : 5;
+      const canSpawn = currentState.enemiesSpawned < currentState.totalEnemiesInRoom;
+      const hasRoomOnScreen = currentState.enemies.length < maxOnScreen;
+      const spawnReady = now - lastSpawnTimeRef.current > WAVES.SPAWN_DELAY;
 
-      if (canSpawn && roomForMore && spawnCooldownPassed) {
-        console.log('Spawning enemy - spawned:', state.enemiesSpawned, 'total:', state.totalEnemiesInRoom, 'onScreen:', state.enemies.length);
+      if (canSpawn && hasRoomOnScreen && spawnReady) {
         actions.spawnEnemy();
-        lastSpawnTime.current = now;
+        lastSpawnTimeRef.current = now;
       }
-    }, [actions, state.player, state.enemies, state.enemiesSpawned, state.totalEnemiesInRoom, state.currentRoom, collision]),
+    }, [actions, collision]), // actions and collision are both stable
     isPlaying
   );
 
-  // Remove dead enemies
+  // Remove dead enemies - use removingEnemiesRef to prevent duplicate removals
   useEffect(() => {
-    const deadEnemies = state.enemies.filter((enemy) => isDead(enemy));
-    
+    const deadEnemies = state.enemies.filter(
+      (enemy) => isDead(enemy) && !removingEnemiesRef.current.has(enemy.id)
+    );
+
     deadEnemies.forEach((enemy) => {
-      // Small delay for death effect
+      // Mark as being removed so we don't queue it again
+      removingEnemiesRef.current.add(enemy.id);
+
       setTimeout(() => {
         actions.removeEnemy(enemy.id);
+        removingEnemiesRef.current.delete(enemy.id);
       }, 100);
     });
   }, [state.enemies, actions]);
 
-  // Room transition
+  // Room transition - only watch gameState, not actions
   useEffect(() => {
     if (state.gameState !== GAME_STATES.ROOM_TRANSITION) return;
+
+    console.log('Room transition started, moving to next room in', WAVES.ROOM_CLEAR_DELAY, 'ms');
 
     const timer = setTimeout(() => {
       actions.nextRoom();
@@ -116,7 +127,7 @@ function GameTest() {
     return () => clearTimeout(timer);
   }, [state.gameState, actions]);
 
-  // Clear message after delay
+  // Clear message after delay - only re-run when message actually changes
   useEffect(() => {
     if (!state.message) return;
 
@@ -127,7 +138,13 @@ function GameTest() {
     return () => clearTimeout(timer);
   }, [state.message, actions]);
 
-  // Render based on game state
+  // Reset spawn tracking when room changes
+  useEffect(() => {
+    lastSpawnTimeRef.current = 0;
+    removingEnemiesRef.current.clear();
+  }, [state.currentRoom]);
+
+  // Render functions
   const renderGameState = () => {
     switch (state.gameState) {
       case GAME_STATES.START:
@@ -136,10 +153,10 @@ function GameTest() {
             <h2>⚔️ Dungeon Crawler ⚔️</h2>
             <p>Survive 5 rooms and defeat the dragon boss!</p>
             <div className="controls-info">
-              <p><strong>Controls:</strong></p>
-              <p>WASD / Arrow Keys - Move</p>
-              <p>Space - Attack</p>
-              <p>P / Escape - Pause</p>
+              <p><strong>Controls</strong></p>
+              <p>WASD / Arrow Keys — Move</p>
+              <p>Space — Attack</p>
+              <p>P / Escape — Pause</p>
             </div>
             <button onClick={actions.startGame}>Start Game</button>
           </div>
@@ -183,7 +200,9 @@ function GameTest() {
         return (
           <div className="game-screen transition-screen">
             <h2>✨ {state.message} ✨</h2>
-            <p>Prepare for Room {state.currentRoom + 1}...</p>
+            {state.currentRoom < 5 && (
+              <p>Prepare for Room {state.currentRoom + 1}...</p>
+            )}
             {isBossRoom(state.currentRoom + 1) && (
               <p className="boss-warning">🐉 BOSS INCOMING 🐉</p>
             )}
@@ -218,10 +237,11 @@ function GameTest() {
                 />
               </div>
               <span className="health-text">
-                {state.player?.health || 0}/{state.player?.maxHealth || 0}
+                {state.player?.health ?? 0}/{state.player?.maxHealth ?? 0}
               </span>
             </div>
           </div>
+
           <div className="hud-center">
             <span className="room-indicator">
               {isBossRoom(state.currentRoom) ? '👑 ' : ''}
@@ -232,6 +252,7 @@ function GameTest() {
               <span className="game-message">{state.message}</span>
             )}
           </div>
+
           <div className="hud-right">
             <span>🏆 {state.score}</span>
             <span>⏱️ {formatTime(state.gameTime)}</span>
@@ -252,19 +273,25 @@ function GameTest() {
           {/* Player */}
           {state.player && (
             <div
-              className={`entity player ${state.player.isAttacking ? 'attacking' : ''} ${state.player.isHit ? 'hit' : ''}`}
+              className={`entity player
+                ${state.player.isAttacking ? 'attacking' : ''}
+                ${state.player.isHit ? 'hit' : ''}
+              `}
               style={{
                 width: state.player.size,
                 height: state.player.size,
                 left: state.player.x,
                 top: state.player.y,
-                transform: state.player.direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
+                transform:
+                  state.player.direction === 'left'
+                    ? 'scaleX(-1)'
+                    : 'scaleX(1)',
               }}
               dangerouslySetInnerHTML={{ __html: state.player.sprite }}
             />
           )}
 
-          {/* Attack Range Indicator (when attacking) */}
+          {/* Attack indicator */}
           {state.player?.isAttacking && (
             <div
               className="attack-indicator"
@@ -289,7 +316,10 @@ function GameTest() {
             return (
               <div
                 key={enemy.id}
-                className={`entity enemy ${enemy.type} ${enemy.isHit ? 'hit' : ''} ${isDead(enemy) ? 'dead' : ''}`}
+                className={`entity enemy ${enemy.type}
+                  ${enemy.isHit ? 'hit' : ''}
+                  ${isDead(enemy) ? 'dead' : ''}
+                `}
                 style={{
                   width: enemy.size,
                   height: enemy.size,
@@ -315,28 +345,28 @@ function GameTest() {
           })}
         </div>
 
-        {/* Debug Info */}
+        {/* Debug panel */}
         <div className="debug-info">
           <p>
             Keys:{' '}
             {Object.entries(state.keysPressed)
-              .filter(([_, v]) => v)
+              .filter(([, v]) => v)
               .map(([k]) => k)
               .join(', ') || 'none'}
           </p>
           <p>
-            Player: ({Math.round(state.player?.x || 0)},{' '}
-            {Math.round(state.player?.y || 0)}) | Direction:{' '}
-            {state.player?.direction}
+            Player: ({Math.round(state.player?.x ?? 0)},{' '}
+            {Math.round(state.player?.y ?? 0)}) | Dir: {state.player?.direction}
           </p>
           <p>
-            Enemies in Range: {debugInfo.enemiesInRange} | Closest:{' '}
-            {debugInfo.closestEnemyDist ?? 'N/A'}px
+            In Range: {debugInfo.enemiesInRange} | Closest:{' '}
+            {debugInfo.closestEnemyDist ?? 'N/A'}px | Cooldown:{' '}
+            {Math.round(state.attackCooldown)}ms
           </p>
           <p>
-            Spawned: {state.enemiesSpawned}/{state.totalEnemiesInRoom} | 
-            Killed: {state.enemiesKilled}/{state.totalEnemiesInRoom} |
-            On Screen: {state.enemies.length}
+            Spawned: {state.enemiesSpawned}/{state.totalEnemiesInRoom} | Killed:{' '}
+            {state.enemiesKilled}/{state.totalEnemiesInRoom} | On Screen:{' '}
+            {state.enemies.length}
           </p>
         </div>
       </div>

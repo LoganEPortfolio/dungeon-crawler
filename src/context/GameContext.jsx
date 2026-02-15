@@ -1,5 +1,5 @@
 // src/context/GameContext.jsx
-import { createContext, useContext, useReducer, useCallback } from 'react';
+import { createContext, useContext, useReducer, useMemo } from 'react';
 import { GAME_STATES, ROOMS, PLAYER, ENEMY, BOSS } from '../utils/constants';
 import {
   createPlayer,
@@ -15,15 +15,14 @@ import {
   calculatePlayerMovement,
 } from '../utils/helpers';
 
-// Initial game state
 const initialState = {
   gameState: GAME_STATES.START,
   player: null,
   enemies: [],
   currentRoom: 1,
-  totalEnemiesInRoom: 0,  // Total enemies for this room
-  enemiesSpawned: 0,       // How many have been spawned
-  enemiesKilled: 0,        // How many have been killed
+  totalEnemiesInRoom: 0,
+  enemiesSpawned: 0,
+  enemiesKilled: 0,
   score: 0,
   gameTime: 0,
   isPaused: false,
@@ -36,27 +35,23 @@ const initialState = {
   },
   lastFrameTime: 0,
   attackCooldown: 0,
-  roomTransitionTimer: 0,
   message: '',
 };
 
-// Action types
 const ACTIONS = {
   START_GAME: 'START_GAME',
   PAUSE_GAME: 'PAUSE_GAME',
   RESUME_GAME: 'RESUME_GAME',
+  TOGGLE_PAUSE: 'TOGGLE_PAUSE',
   GAME_OVER: 'GAME_OVER',
   VICTORY: 'VICTORY',
   UPDATE_PLAYER: 'UPDATE_PLAYER',
   DAMAGE_PLAYER: 'DAMAGE_PLAYER',
-  UPDATE_ENEMIES: 'UPDATE_ENEMIES',
   SPAWN_ENEMY: 'SPAWN_ENEMY',
   DAMAGE_ENEMY: 'DAMAGE_ENEMY',
   REMOVE_ENEMY: 'REMOVE_ENEMY',
   NEXT_ROOM: 'NEXT_ROOM',
-  START_ROOM_TRANSITION: 'START_ROOM_TRANSITION',
   SET_KEYS_PRESSED: 'SET_KEYS_PRESSED',
-  UPDATE_GAME_TIME: 'UPDATE_GAME_TIME',
   UPDATE_COOLDOWNS: 'UPDATE_COOLDOWNS',
   ADD_SCORE: 'ADD_SCORE',
   SET_MESSAGE: 'SET_MESSAGE',
@@ -64,15 +59,13 @@ const ACTIONS = {
   RESET_GAME: 'RESET_GAME',
 };
 
-// Reducer function
 function gameReducer(state, action) {
   switch (action.type) {
+
     case ACTIONS.START_GAME: {
       const player = createPlayer();
       const enemyCount = getEnemyCountForRoom(1);
-      
-      console.log('Starting game - Room 1, Enemies to spawn:', enemyCount);
-      
+      console.log('Starting game - Room 1, Enemies:', enemyCount);
       return {
         ...initialState,
         gameState: GAME_STATES.PLAYING,
@@ -89,11 +82,7 @@ function gameReducer(state, action) {
 
     case ACTIONS.PAUSE_GAME: {
       if (state.gameState !== GAME_STATES.PLAYING) return state;
-      return {
-        ...state,
-        gameState: GAME_STATES.PAUSED,
-        isPaused: true,
-      };
+      return { ...state, gameState: GAME_STATES.PAUSED, isPaused: true };
     }
 
     case ACTIONS.RESUME_GAME: {
@@ -106,12 +95,24 @@ function gameReducer(state, action) {
       };
     }
 
+    // Toggle handled entirely in reducer - no state dependency in actions
+    case ACTIONS.TOGGLE_PAUSE: {
+      if (state.gameState === GAME_STATES.PLAYING) {
+        return { ...state, gameState: GAME_STATES.PAUSED, isPaused: true };
+      }
+      if (state.gameState === GAME_STATES.PAUSED) {
+        return {
+          ...state,
+          gameState: GAME_STATES.PLAYING,
+          isPaused: false,
+          lastFrameTime: Date.now(),
+        };
+      }
+      return state;
+    }
+
     case ACTIONS.GAME_OVER: {
-      return {
-        ...state,
-        gameState: GAME_STATES.GAME_OVER,
-        message: 'Game Over!',
-      };
+      return { ...state, gameState: GAME_STATES.GAME_OVER, message: 'Game Over!' };
     }
 
     case ACTIONS.VICTORY: {
@@ -123,16 +124,12 @@ function gameReducer(state, action) {
     }
 
     case ACTIONS.UPDATE_PLAYER: {
-      return {
-        ...state,
-        player: action.payload,
-      };
+      return { ...state, player: action.payload };
     }
 
     case ACTIONS.DAMAGE_PLAYER: {
       if (!state.player) return state;
       const damagedPlayer = applyDamage(state.player, action.payload);
-      
       if (isDead(damagedPlayer)) {
         return {
           ...state,
@@ -141,39 +138,20 @@ function gameReducer(state, action) {
           message: 'Game Over!',
         };
       }
-      
-      return {
-        ...state,
-        player: damagedPlayer,
-      };
-    }
-
-    case ACTIONS.UPDATE_ENEMIES: {
-      return {
-        ...state,
-        enemies: action.payload,
-      };
+      return { ...state, player: damagedPlayer };
     }
 
     case ACTIONS.SPAWN_ENEMY: {
-      if (!state.player) {
-        console.log('Cannot spawn - no player');
-        return state;
-      }
-      
-      // Check if we've already spawned all enemies for this room
-      if (state.enemiesSpawned >= state.totalEnemiesInRoom) {
-        console.log('Cannot spawn - all enemies spawned:', state.enemiesSpawned, '/', state.totalEnemiesInRoom);
-        return state;
-      }
+      if (!state.player) return state;
+      if (state.enemiesSpawned >= state.totalEnemiesInRoom) return state;
 
       let newEnemy;
       if (isBossRoom(state.currentRoom)) {
         newEnemy = createBoss(state.player.x, state.player.y);
-        console.log('Spawning BOSS at:', newEnemy.x, newEnemy.y);
+        console.log('Spawning BOSS');
       } else {
         newEnemy = createEnemy(state.player.x, state.player.y, state.currentRoom);
-        console.log('Spawning enemy', state.enemiesSpawned + 1, 'at:', newEnemy.x, newEnemy.y);
+        console.log('Spawning enemy', state.enemiesSpawned + 1, '/', state.totalEnemiesInRoom);
       }
 
       return {
@@ -185,16 +163,11 @@ function gameReducer(state, action) {
 
     case ACTIONS.DAMAGE_ENEMY: {
       const { enemyId, damage } = action.payload;
-      const updatedEnemies = state.enemies.map((enemy) => {
-        if (enemy.id === enemyId) {
-          return applyDamage(enemy, damage);
-        }
-        return enemy;
-      });
-
       return {
         ...state,
-        enemies: updatedEnemies,
+        enemies: state.enemies.map((enemy) =>
+          enemy.id === enemyId ? applyDamage(enemy, damage) : enemy
+        ),
       };
     }
 
@@ -206,11 +179,10 @@ function gameReducer(state, action) {
       const newEnemies = state.enemies.filter((e) => e.id !== action.payload);
       const newEnemiesKilled = state.enemiesKilled + 1;
 
-      console.log('Enemy killed. Total killed:', newEnemiesKilled, '/', state.totalEnemiesInRoom);
+      console.log('Enemy removed. Killed:', newEnemiesKilled, '/', state.totalEnemiesInRoom);
 
-      // Check if room is cleared (all enemies spawned AND killed)
+      // Room cleared when all enemies have been killed
       if (newEnemiesKilled >= state.totalEnemiesInRoom) {
-        // Check if this was the boss room
         if (isBossRoom(state.currentRoom)) {
           console.log('BOSS DEFEATED - VICTORY!');
           return {
@@ -223,15 +195,13 @@ function gameReducer(state, action) {
           };
         }
 
-        // Start room transition
-        console.log('Room cleared! Transitioning...');
+        console.log('Room', state.currentRoom, 'cleared!');
         return {
           ...state,
           enemies: newEnemies,
           enemiesKilled: newEnemiesKilled,
           score: state.score + scoreValue,
           gameState: GAME_STATES.ROOM_TRANSITION,
-          roomTransitionTimer: 2000,
           message: `Room ${state.currentRoom} Cleared!`,
         };
       }
@@ -246,13 +216,8 @@ function gameReducer(state, action) {
 
     case ACTIONS.NEXT_ROOM: {
       const nextRoom = state.currentRoom + 1;
-      
       if (nextRoom > ROOMS.TOTAL) {
-        return {
-          ...state,
-          gameState: GAME_STATES.VICTORY,
-          message: 'Victory!',
-        };
+        return { ...state, gameState: GAME_STATES.VICTORY };
       }
 
       const enemyCount = getEnemyCountForRoom(nextRoom);
@@ -270,33 +235,15 @@ function gameReducer(state, action) {
         enemiesSpawned: 0,
         enemiesKilled: 0,
         enemies: [],
-        roomTransitionTimer: 0,
         message: roomMessage,
-      };
-    }
-
-    case ACTIONS.START_ROOM_TRANSITION: {
-      return {
-        ...state,
-        gameState: GAME_STATES.ROOM_TRANSITION,
-        roomTransitionTimer: action.payload || 2000,
+        lastFrameTime: Date.now(),
       };
     }
 
     case ACTIONS.SET_KEYS_PRESSED: {
       return {
         ...state,
-        keysPressed: {
-          ...state.keysPressed,
-          ...action.payload,
-        },
-      };
-    }
-
-    case ACTIONS.UPDATE_GAME_TIME: {
-      return {
-        ...state,
-        gameTime: state.gameTime + action.payload,
+        keysPressed: { ...state.keysPressed, ...action.payload },
       };
     }
 
@@ -305,7 +252,6 @@ function gameReducer(state, action) {
       return {
         ...state,
         attackCooldown: Math.max(0, state.attackCooldown - deltaTime),
-        roomTransitionTimer: Math.max(0, state.roomTransitionTimer - deltaTime),
         player: state.player
           ? {
               ...state.player,
@@ -324,40 +270,32 @@ function gameReducer(state, action) {
     }
 
     case ACTIONS.ADD_SCORE: {
-      return {
-        ...state,
-        score: state.score + action.payload,
-      };
+      return { ...state, score: state.score + action.payload };
     }
 
     case ACTIONS.SET_MESSAGE: {
-      return {
-        ...state,
-        message: action.payload,
-      };
+      return { ...state, message: action.payload };
     }
 
     case ACTIONS.TICK: {
-      // Main game loop tick - handles movement, collisions, spawning
-      if (state.gameState !== GAME_STATES.PLAYING || !state.player) {
-        return state;
-      }
+      if (state.gameState !== GAME_STATES.PLAYING || !state.player) return state;
 
       const now = Date.now();
       const deltaTime = now - state.lastFrameTime;
 
-      // Update player position based on keys pressed
       let updatedPlayer = calculatePlayerMovement(state.player, state.keysPressed);
 
-      // Update enemy positions (move towards player)
       let updatedEnemies = state.enemies.map((enemy) =>
         moveTowardsPlayer(enemy, updatedPlayer.x, updatedPlayer.y)
       );
 
-      // Check for enemy collisions with player (enemy attacks)
+      // Enemy attacks player on collision
       updatedEnemies.forEach((enemy) => {
         if (checkCircleCollision(updatedPlayer, enemy)) {
-          const canAttack = now - enemy.lastAttackTime > (enemy.type === 'boss' ? BOSS.ATTACK_COOLDOWN : ENEMY.ATTACK_COOLDOWN);
+          const cooldown = enemy.type === 'boss'
+            ? BOSS.ATTACK_COOLDOWN
+            : ENEMY.ATTACK_COOLDOWN;
+          const canAttack = now - enemy.lastAttackTime > cooldown;
           if (canAttack) {
             updatedPlayer = applyDamage(updatedPlayer, enemy.damage);
             enemy.lastAttackTime = now;
@@ -365,7 +303,6 @@ function gameReducer(state, action) {
         }
       });
 
-      // Check for player death
       if (isDead(updatedPlayer)) {
         return {
           ...state,
@@ -377,7 +314,7 @@ function gameReducer(state, action) {
         };
       }
 
-      // Handle player attack
+      // Player attacks
       if (state.keysPressed.attack && state.attackCooldown <= 0) {
         updatedPlayer = {
           ...updatedPlayer,
@@ -385,15 +322,12 @@ function gameReducer(state, action) {
           attackTimer: 10,
         };
 
-        // Check for hits on enemies
-        updatedEnemies = updatedEnemies.map((enemy) => {
-          if (checkAttackHit(updatedPlayer, enemy)) {
-            return applyDamage(enemy, updatedPlayer.damage);
-          }
-          return enemy;
-        });
+        updatedEnemies = updatedEnemies.map((enemy) =>
+          checkAttackHit(updatedPlayer, enemy)
+            ? applyDamage(enemy, updatedPlayer.damage)
+            : enemy
+        );
 
-        // Update attack cooldown
         return {
           ...state,
           player: updatedPlayer,
@@ -414,9 +348,7 @@ function gameReducer(state, action) {
     }
 
     case ACTIONS.RESET_GAME: {
-      return {
-        ...initialState,
-      };
+      return { ...initialState };
     }
 
     default:
@@ -424,100 +356,40 @@ function gameReducer(state, action) {
   }
 }
 
-// Create context
 const GameContext = createContext(null);
 
-// Provider component
 export function GameProvider({ children }) {
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
-  // Action creators
-  const actions = {
-    startGame: useCallback(() => {
-      dispatch({ type: ACTIONS.START_GAME });
-    }, []),
-
-    pauseGame: useCallback(() => {
-      dispatch({ type: ACTIONS.PAUSE_GAME });
-    }, []),
-
-    resumeGame: useCallback(() => {
-      dispatch({ type: ACTIONS.RESUME_GAME });
-    }, []),
-
-    togglePause: useCallback(() => {
-      if (state.gameState === GAME_STATES.PLAYING) {
-        dispatch({ type: ACTIONS.PAUSE_GAME });
-      } else if (state.gameState === GAME_STATES.PAUSED) {
-        dispatch({ type: ACTIONS.RESUME_GAME });
-      }
-    }, [state.gameState]),
-
-    gameOver: useCallback(() => {
-      dispatch({ type: ACTIONS.GAME_OVER });
-    }, []),
-
-    victory: useCallback(() => {
-      dispatch({ type: ACTIONS.VICTORY });
-    }, []),
-
-    updatePlayer: useCallback((player) => {
-      dispatch({ type: ACTIONS.UPDATE_PLAYER, payload: player });
-    }, []),
-
-    damagePlayer: useCallback((damage) => {
-      dispatch({ type: ACTIONS.DAMAGE_PLAYER, payload: damage });
-    }, []),
-
-    spawnEnemy: useCallback(() => {
-      dispatch({ type: ACTIONS.SPAWN_ENEMY });
-    }, []),
-
-    damageEnemy: useCallback((enemyId, damage) => {
-      dispatch({ type: ACTIONS.DAMAGE_ENEMY, payload: { enemyId, damage } });
-    }, []),
-
-    removeEnemy: useCallback((enemyId) => {
-      dispatch({ type: ACTIONS.REMOVE_ENEMY, payload: enemyId });
-    }, []),
-
-    nextRoom: useCallback(() => {
-      dispatch({ type: ACTIONS.NEXT_ROOM });
-    }, []),
-
-    setKeysPressed: useCallback((keys) => {
-      dispatch({ type: ACTIONS.SET_KEYS_PRESSED, payload: keys });
-    }, []),
-
-    updateCooldowns: useCallback((deltaTime) => {
-      dispatch({ type: ACTIONS.UPDATE_COOLDOWNS, payload: deltaTime });
-    }, []),
-
-    addScore: useCallback((points) => {
-      dispatch({ type: ACTIONS.ADD_SCORE, payload: points });
-    }, []),
-
-    setMessage: useCallback((message) => {
-      dispatch({ type: ACTIONS.SET_MESSAGE, payload: message });
-    }, []),
-
-    tick: useCallback(() => {
-      dispatch({ type: ACTIONS.TICK });
-    }, []),
-
-    resetGame: useCallback(() => {
-      dispatch({ type: ACTIONS.RESET_GAME });
-    }, []),
-  };
+  // useMemo with empty deps - dispatch is stable so actions never change reference
+  const actions = useMemo(() => ({
+    startGame:       () => dispatch({ type: ACTIONS.START_GAME }),
+    pauseGame:       () => dispatch({ type: ACTIONS.PAUSE_GAME }),
+    resumeGame:      () => dispatch({ type: ACTIONS.RESUME_GAME }),
+    togglePause:     () => dispatch({ type: ACTIONS.TOGGLE_PAUSE }),
+    gameOver:        () => dispatch({ type: ACTIONS.GAME_OVER }),
+    victory:         () => dispatch({ type: ACTIONS.VICTORY }),
+    updatePlayer:    (p) => dispatch({ type: ACTIONS.UPDATE_PLAYER, payload: p }),
+    damagePlayer:    (d) => dispatch({ type: ACTIONS.DAMAGE_PLAYER, payload: d }),
+    spawnEnemy:      () => dispatch({ type: ACTIONS.SPAWN_ENEMY }),
+    damageEnemy:     (id, d) => dispatch({ type: ACTIONS.DAMAGE_ENEMY, payload: { enemyId: id, damage: d } }),
+    removeEnemy:     (id) => dispatch({ type: ACTIONS.REMOVE_ENEMY, payload: id }),
+    nextRoom:        () => dispatch({ type: ACTIONS.NEXT_ROOM }),
+    setKeysPressed:  (k) => dispatch({ type: ACTIONS.SET_KEYS_PRESSED, payload: k }),
+    updateCooldowns: (dt) => dispatch({ type: ACTIONS.UPDATE_COOLDOWNS, payload: dt }),
+    addScore:        (pts) => dispatch({ type: ACTIONS.ADD_SCORE, payload: pts }),
+    setMessage:      (m) => dispatch({ type: ACTIONS.SET_MESSAGE, payload: m }),
+    tick:            () => dispatch({ type: ACTIONS.TICK }),
+    resetGame:       () => dispatch({ type: ACTIONS.RESET_GAME }),
+  }), []); // Empty - dispatch never changes
 
   return (
-    <GameContext.Provider value={{ state, actions, dispatch }}>
+    <GameContext.Provider value={{ state, actions }}>
       {children}
     </GameContext.Provider>
   );
 }
 
-// Custom hook to use game context
 export function useGame() {
   const context = useContext(GameContext);
   if (!context) {
@@ -526,5 +398,4 @@ export function useGame() {
   return context;
 }
 
-// Export action types for external use if needed
 export { ACTIONS };
