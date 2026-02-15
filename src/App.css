@@ -1,42 +1,74 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* src/App.css */
+.test-container {
+  padding: 20px;
+  max-width: 700px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.test-container h1 {
+  color: #fbbf24;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.test-section {
+  background-color: #2d2d44;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  border: 1px solid #5c5c8a;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.test-section h2 {
+  color: #4ade80;
+  font-size: 1rem;
+  margin-bottom: 10px;
 }
 
-.card {
-  padding: 2em;
+.test-section p {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  margin-bottom: 5px;
 }
 
-.read-the-docs {
-  color: #888;
+.arena-preview {
+  border-radius: 4px;
+}
+
+.sprite-container {
+  display: inline-block;
+  margin-top: 10px;
+}
+
+.sprite-container svg {
+  width: 100%;
+  height: 100%;
+}
+
+.sprite-container.boss {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.sprite-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.sprite-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #1a1a2e;
+  padding: 10px;
+  border-radius: 8px;
+  min-width: 70px;
+}
+
+.sprite-card p {
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  color: #9ca3af;
 }
