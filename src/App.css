@@ -480,3 +480,368 @@
   margin: 3px 0;
   font-family: 'Courier New', monospace;
 }
+
+/* ─── Screen Shared Additions ────────────────────────────── */
+.screen-icon-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.taunt-sprite {
+  width: 45px;
+  height: 45px;
+  animation: taunt-bounce 0.6s ease-in-out infinite alternate;
+}
+
+.taunt-sprite svg {
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes taunt-bounce {
+  from { transform: translateY(0px) rotate(-5deg); }
+  to   { transform: translateY(-6px) rotate(5deg); }
+}
+
+.screen-flavour {
+  color: #6b7280 !important;
+  font-style: italic;
+  font-size: 0.9rem !important;
+  margin-bottom: 20px !important;
+}
+
+/* ─── Stats Panel ────────────────────────────────────────── */
+.stats-panel {
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 16px 24px;
+  margin: 10px 0;
+  border: 1px solid #3d3d5c;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.stat-value {
+  color: #f9fafb;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.stat-value.gold {
+  color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+}
+
+/* ─── Screen Buttons ─────────────────────────────────────── */
+.screen-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.5) !important;
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%) !important;
+  color: #d1d5db !important;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%) !important;
+}
+
+/* ─── Game Over Specific ─────────────────────────────────── */
+.gameover-screen h2 {
+  color: #ef4444;
+  font-size: 2.2rem;
+  margin-bottom: 4px;
+  text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+/* ─── Victory Specific ───────────────────────────────────── */
+.victory-boss-preview {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.defeated-boss-sprite {
+  width: 90px;
+  height: 90px;
+  filter: grayscale(0.8) brightness(0.6);
+  transform: rotate(30deg);
+  opacity: 0.7;
+}
+
+.defeated-boss-sprite svg {
+  width: 100%;
+  height: 100%;
+}
+
+.victory-screen h2 {
+  color: #4ade80;
+  font-size: 2.2rem;
+  margin-bottom: 4px;
+  animation: victory-glow 1.5s ease-in-out infinite alternate;
+}
+
+/* ─── Room Transition Specific ───────────────────────────── */
+.transition-cleared h2 {
+  color: #60a5fa;
+  font-size: 2rem;
+  margin-bottom: 16px;
+}
+
+.transition-next {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.transition-label {
+  color: #6b7280 !important;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.8rem !important;
+}
+
+.transition-preview {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background-color: rgba(0,0,0,0.3);
+  padding: 16px 24px;
+  border-radius: 12px;
+  border: 1px solid #3d3d5c;
+  width: 100%;
+}
+
+.transition-preview.boss-preview {
+  border-color: #7c3aed;
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+}
+
+.transition-sprite {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.transition-sprite svg {
+  width: 100%;
+  height: 100%;
+}
+
+.transition-sprite.boss-incoming {
+  width: 80px;
+  height: 80px;
+  animation: boss-float 2s ease-in-out infinite;
+}
+
+.transition-room-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.transition-room-num {
+  color: #f9fafb;
+  font-size: 1.4rem;
+  font-weight: bold;
+}
+
+.transition-room-type {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.transition-room-type.boss-type {
+  color: #a78bfa;
+  font-weight: bold;
+}
+
+.transition-countdown {
+  color: #9ca3af;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.countdown-num {
+  color: #fbbf24;
+  font-size: 2rem;
+  font-weight: bold;
+  min-width: 40px;
+  text-align: center;
+  animation: countdown-pulse 1s ease-in-out infinite;
+}
+
+@keyframes countdown-pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.2); }
+}
+
+/* ─── Mobile Responsive ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .game-screen {
+    min-width: unset;
+    width: 95vw;
+    padding: 24px 16px;
+    border-radius: 12px;
+  }
+
+  .start-title h1 {
+    font-size: 1.8rem;
+  }
+
+  .controls-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .control-key {
+    min-width: 48px;
+    font-size: 0.75rem;
+  }
+
+  .stats-panel {
+    padding: 12px 16px;
+  }
+
+  .stat-label,
+  .stat-value {
+    font-size: 0.85rem;
+  }
+
+  .screen-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .screen-buttons button {
+    width: 100%;
+  }
+
+  .boss-preview-sprite {
+    width: 75px;
+    height: 75px;
+  }
+
+  .transition-sprite.boss-incoming {
+    width: 60px;
+    height: 60px;
+  }
+
+  /* Arena scaling on mobile is handled via inline transform in components */
+  .game-playing {
+    width: 100vw;
+    align-items: center;
+  }
+
+  /* HUD stacks on mobile */
+  .hud {
+    width: 100%;
+    max-width: 100vw;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 6px;
+    border-radius: 0;
+  }
+
+  .hud-left  { flex: 0 0 100%; order: 2; }
+  .hud-center { flex: 0 0 50%; order: 1; }
+  .hud-right { flex: 0 0 50%; order: 1; }
+
+  .health-bar.large {
+    width: 140px;
+    height: 14px;
+  }
+
+  .room-indicator {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .start-title h1 {
+    font-size: 1.5rem;
+  }
+
+  .hud-center { flex: 0 0 60%; }
+  .hud-right  { flex: 0 0 40%; }
+
+  .hud-right span {
+    font-size: 0.75rem;
+  }
+}
+
+/* ─── Test Navigation (remove before final build) ───────── */
+.test-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.test-nav-btn {
+  background-color: #374151;
+  color: #d1d5db;
+  border: 1px solid #4b5563;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.test-nav-btn:hover {
+  background-color: #4b5563;
+  color: white;
+}
+
+.test-nav-btn.active {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.test-device-info {
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-family: 'Courier New', monospace;
+  margin-left: 8px;
+}

@@ -2,3 +2,4 @@
 export { useGameLoop } from './useGameLoop';
 export { usePlayerMovement } from './usePlayerMovement';
 export { useCollision } from './useCollision';
+export { useScreenSize } from './useScreenSize';
