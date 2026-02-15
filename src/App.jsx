@@ -1,5 +1,5 @@
 // src/App.jsx
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { GameProvider, useGame } from './context/GameContext';
 import { useGameLoop, usePlayerMovement, useCollision } from './hooks';
 import { GAME_STATES, ARENA, KEYS, WAVES } from './utils/constants';
@@ -20,6 +20,9 @@ function GameTest() {
     enemiesInRange: 0,
     closestEnemyDist: null,
   });
+  
+  // Use ref to track last spawn time
+  const lastSpawnTime = useRef(0);
 
   const isPlaying = state.gameState === GAME_STATES.PLAYING;
 
@@ -66,46 +69,39 @@ function GameTest() {
           enemiesInRange: enemiesInRange.length,
           closestEnemyDist: closestDist ? Math.round(closestDist) : null,
         });
+      } else {
+        setDebugInfo((prev) => ({
+          ...prev,
+          enemiesInRange: 0,
+          closestEnemyDist: null,
+        }));
       }
-    }, [actions, state.player, state.enemies, collision]),
+
+      // Handle enemy spawning inside game loop
+      const now = Date.now();
+      const canSpawn = state.enemiesSpawned < state.totalEnemiesInRoom;
+      const maxOnScreen = isBossRoom(state.currentRoom) ? 1 : 5;
+      const roomForMore = state.enemies.length < maxOnScreen;
+      const spawnCooldownPassed = now - lastSpawnTime.current > WAVES.SPAWN_DELAY;
+
+      if (canSpawn && roomForMore && spawnCooldownPassed) {
+        console.log('Spawning enemy - spawned:', state.enemiesSpawned, 'total:', state.totalEnemiesInRoom, 'onScreen:', state.enemies.length);
+        actions.spawnEnemy();
+        lastSpawnTime.current = now;
+      }
+    }, [actions, state.player, state.enemies, state.enemiesSpawned, state.totalEnemiesInRoom, state.currentRoom, collision]),
     isPlaying
   );
 
-  // Enemy spawning
-  useEffect(() => {
-    if (!isPlaying) return;
-
-    const totalToSpawn =
-      state.enemiesRemaining + state.enemies.length - state.enemiesSpawned;
-    if (totalToSpawn <= 0) return;
-
-    // Don't spawn too many at once
-    const maxOnScreen = isBossRoom(state.currentRoom) ? 1 : 5;
-    if (state.enemies.length >= maxOnScreen) return;
-
-    const spawnTimer = setTimeout(() => {
-      actions.spawnEnemy();
-    }, WAVES.SPAWN_DELAY);
-
-    return () => clearTimeout(spawnTimer);
-  }, [
-    isPlaying,
-    state.enemiesRemaining,
-    state.enemiesSpawned,
-    state.enemies.length,
-    state.currentRoom,
-    actions,
-  ]);
-
   // Remove dead enemies
   useEffect(() => {
-    state.enemies.forEach((enemy) => {
-      if (isDead(enemy)) {
-        // Small delay for death effect
-        setTimeout(() => {
-          actions.removeEnemy(enemy.id);
-        }, 100);
-      }
+    const deadEnemies = state.enemies.filter((enemy) => isDead(enemy));
+    
+    deadEnemies.forEach((enemy) => {
+      // Small delay for death effect
+      setTimeout(() => {
+        actions.removeEnemy(enemy.id);
+      }, 100);
     });
   }, [state.enemies, actions]);
 
@@ -239,7 +235,7 @@ function GameTest() {
           <div className="hud-right">
             <span>🏆 {state.score}</span>
             <span>⏱️ {formatTime(state.gameTime)}</span>
-            <span>👹 {state.enemies.length}/{state.enemiesRemaining}</span>
+            <span>👹 {state.enemiesKilled}/{state.totalEnemiesInRoom}</span>
           </div>
         </div>
 
@@ -338,8 +334,9 @@ function GameTest() {
             {debugInfo.closestEnemyDist ?? 'N/A'}px
           </p>
           <p>
-            Attack Cooldown: {Math.round(state.attackCooldown)}ms | Spawned:{' '}
-            {state.enemiesSpawned}/{state.enemiesRemaining + state.enemies.length}
+            Spawned: {state.enemiesSpawned}/{state.totalEnemiesInRoom} | 
+            Killed: {state.enemiesKilled}/{state.totalEnemiesInRoom} |
+            On Screen: {state.enemies.length}
           </p>
         </div>
       </div>
@@ -348,7 +345,7 @@ function GameTest() {
 
   return (
     <div className="game-container">
-      <h1>⚔️ Dungeon Crawler - Hooks Test ⚔️</h1>
+      <h1>⚔️ Dungeon Crawler ⚔️</h1>
       {renderGameState()}
     </div>
   );

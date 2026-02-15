@@ -13,7 +13,6 @@ import {
   checkCircleCollision,
   checkAttackHit,
   calculatePlayerMovement,
-  keepInBounds,
 } from '../utils/helpers';
 
 // Initial game state
@@ -22,8 +21,9 @@ const initialState = {
   player: null,
   enemies: [],
   currentRoom: 1,
-  enemiesRemaining: 0,
-  enemiesSpawned: 0,
+  totalEnemiesInRoom: 0,  // Total enemies for this room
+  enemiesSpawned: 0,       // How many have been spawned
+  enemiesKilled: 0,        // How many have been killed
   score: 0,
   gameTime: 0,
   isPaused: false,
@@ -70,13 +70,17 @@ function gameReducer(state, action) {
     case ACTIONS.START_GAME: {
       const player = createPlayer();
       const enemyCount = getEnemyCountForRoom(1);
+      
+      console.log('Starting game - Room 1, Enemies to spawn:', enemyCount);
+      
       return {
         ...initialState,
         gameState: GAME_STATES.PLAYING,
         player,
         currentRoom: 1,
-        enemiesRemaining: enemyCount,
+        totalEnemiesInRoom: enemyCount,
         enemiesSpawned: 0,
+        enemiesKilled: 0,
         enemies: [],
         lastFrameTime: Date.now(),
         message: 'Room 1 - Fight!',
@@ -152,16 +156,24 @@ function gameReducer(state, action) {
     }
 
     case ACTIONS.SPAWN_ENEMY: {
-      if (!state.player) return state;
-      if (state.enemiesSpawned >= getEnemyCountForRoom(state.currentRoom)) {
+      if (!state.player) {
+        console.log('Cannot spawn - no player');
+        return state;
+      }
+      
+      // Check if we've already spawned all enemies for this room
+      if (state.enemiesSpawned >= state.totalEnemiesInRoom) {
+        console.log('Cannot spawn - all enemies spawned:', state.enemiesSpawned, '/', state.totalEnemiesInRoom);
         return state;
       }
 
       let newEnemy;
       if (isBossRoom(state.currentRoom)) {
         newEnemy = createBoss(state.player.x, state.player.y);
+        console.log('Spawning BOSS at:', newEnemy.x, newEnemy.y);
       } else {
         newEnemy = createEnemy(state.player.x, state.player.y, state.currentRoom);
+        console.log('Spawning enemy', state.enemiesSpawned + 1, 'at:', newEnemy.x, newEnemy.y);
       }
 
       return {
@@ -192,16 +204,19 @@ function gameReducer(state, action) {
 
       const scoreValue = enemyToRemove.type === 'boss' ? 500 : 100;
       const newEnemies = state.enemies.filter((e) => e.id !== action.payload);
-      const newEnemiesRemaining = state.enemiesRemaining - 1;
+      const newEnemiesKilled = state.enemiesKilled + 1;
 
-      // Check if room is cleared
-      if (newEnemiesRemaining <= 0 && newEnemies.length === 0) {
+      console.log('Enemy killed. Total killed:', newEnemiesKilled, '/', state.totalEnemiesInRoom);
+
+      // Check if room is cleared (all enemies spawned AND killed)
+      if (newEnemiesKilled >= state.totalEnemiesInRoom) {
         // Check if this was the boss room
         if (isBossRoom(state.currentRoom)) {
+          console.log('BOSS DEFEATED - VICTORY!');
           return {
             ...state,
             enemies: newEnemies,
-            enemiesRemaining: 0,
+            enemiesKilled: newEnemiesKilled,
             score: state.score + scoreValue,
             gameState: GAME_STATES.VICTORY,
             message: 'Victory! You defeated the boss!',
@@ -209,10 +224,11 @@ function gameReducer(state, action) {
         }
 
         // Start room transition
+        console.log('Room cleared! Transitioning...');
         return {
           ...state,
           enemies: newEnemies,
-          enemiesRemaining: 0,
+          enemiesKilled: newEnemiesKilled,
           score: state.score + scoreValue,
           gameState: GAME_STATES.ROOM_TRANSITION,
           roomTransitionTimer: 2000,
@@ -223,13 +239,14 @@ function gameReducer(state, action) {
       return {
         ...state,
         enemies: newEnemies,
-        enemiesRemaining: newEnemiesRemaining,
+        enemiesKilled: newEnemiesKilled,
         score: state.score + scoreValue,
       };
     }
 
     case ACTIONS.NEXT_ROOM: {
       const nextRoom = state.currentRoom + 1;
+      
       if (nextRoom > ROOMS.TOTAL) {
         return {
           ...state,
@@ -243,12 +260,15 @@ function gameReducer(state, action) {
         ? `Room ${nextRoom} - BOSS FIGHT!`
         : `Room ${nextRoom} - Fight!`;
 
+      console.log('Entering Room', nextRoom, '- Enemies:', enemyCount);
+
       return {
         ...state,
         gameState: GAME_STATES.PLAYING,
         currentRoom: nextRoom,
-        enemiesRemaining: enemyCount,
+        totalEnemiesInRoom: enemyCount,
         enemiesSpawned: 0,
+        enemiesKilled: 0,
         enemies: [],
         roomTransitionTimer: 0,
         message: roomMessage,
