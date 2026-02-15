@@ -845,3 +845,172 @@
   font-family: 'Courier New', monospace;
   margin-left: 8px;
 }
+
+/* ─── Arena Wrapper (for scaling) ────────────────────────── */
+.arena-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+/* ─── Arena Touch Hint ───────────────────────────────────── */
+.arena-touch-hint {
+  position: absolute;
+  bottom: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.9rem;
+  text-align: center;
+  pointer-events: none;
+  animation: hint-fade 2s ease-in-out infinite;
+}
+
+@keyframes hint-fade {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+/* ─── Boss Label ─────────────────────────────────────────── */
+.boss-label {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
+  animation: boss-label-pulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes boss-label-pulse {
+  from { box-shadow: 0 0 10px rgba(124, 58, 237, 0.5); }
+  to   { box-shadow: 0 0 20px rgba(124, 58, 237, 0.8); }
+}
+
+/* ─── Pause Screen ───────────────────────────────────────── */
+.pause-screen {
+  gap: 16px;
+}
+
+.pause-screen h2 {
+  color: #60a5fa;
+  font-size: 2.2rem;
+  margin-bottom: 0;
+}
+
+.pause-info {
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 16px 32px;
+  border-radius: 10px;
+  border: 1px solid #3d3d5c;
+}
+
+.pause-info p {
+  margin: 6px 0;
+  font-size: 1rem;
+  color: #d1d5db;
+}
+
+.pause-hint {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.pause-hint p {
+  margin: 0;
+}
+
+.key-hint {
+  background-color: #374151;
+  color: #f9fafb;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  border: 1px solid #6b7280;
+  margin: 0 2px;
+}
+
+/* ─── HUD Stat Style ─────────────────────────────────────── */
+.hud-stat {
+  color: #e5e5e5;
+  font-size: 0.875rem;
+}
+
+/* ─── HUD Mobile Adjustments ─────────────────────────────── */
+.hud-mobile {
+  padding: 8px 12px;
+}
+
+.hud-mobile .health-bar.large {
+  width: 120px;
+  height: 12px;
+}
+
+.hud-mobile .health-text {
+  font-size: 0.75rem;
+  min-width: 55px;
+}
+
+.hud-mobile .room-indicator {
+  font-size: 1rem;
+}
+
+.hud-mobile .hud-stat {
+  font-size: 0.75rem;
+}
+
+/* ─── Debug Panel Enhancements ───────────────────────────── */
+.debug-info {
+  margin-top: 10px;
+  padding: 12px 20px;
+  background-color: rgba(26, 26, 46, 0.9);
+  border-radius: 8px;
+  width: 100%;
+  max-width: 800px;
+  border: 1px solid #3d3d5c;
+}
+
+.debug-info p {
+  color: #6b7280;
+  font-size: 0.7rem;
+  margin: 2px 0;
+  font-family: 'Courier New', monospace;
+}
+
+.debug-info.hidden {
+  display: none;
+}
+
+/* ─── Mobile Arena ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .arena-wrapper {
+    margin: 0 auto;
+  }
+
+  .arena {
+    border-radius: 8px !important;
+  }
+
+  .boss-label {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    top: -16px;
+  }
+
+  .enemy-health-bar {
+    height: 3px;
+    bottom: -6px;
+  }
+
+  .attack-indicator {
+    width: 80px;
+    height: 80px;
+  }
+}
