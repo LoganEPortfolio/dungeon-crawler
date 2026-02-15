@@ -1,7 +1,8 @@
 /* src/App.css */
 .test-container {
   padding: 20px;
-  max-width: 700px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .test-container h1 {
@@ -24,19 +25,60 @@
   margin-bottom: 10px;
 }
 
+.test-section h3 {
+  color: #60a5fa;
+  font-size: 0.875rem;
+  margin-bottom: 8px;
+}
+
 .test-section p {
   color: #9ca3af;
   font-size: 0.875rem;
   margin-bottom: 5px;
 }
 
-.arena-preview {
-  border-radius: 4px;
+/* Grid layouts */
+.test-grid {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
 }
 
+.test-card {
+  background-color: #1a1a2e;
+  padding: 12px;
+  border-radius: 8px;
+  min-width: 140px;
+  text-align: center;
+}
+
+.room-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.room-card {
+  background-color: #1a1a2e;
+  padding: 10px;
+  border-radius: 6px;
+  min-width: 100px;
+  text-align: center;
+}
+
+.room-card h3 {
+  margin-bottom: 5px;
+}
+
+.room-card p {
+  font-size: 0.75rem;
+  margin-bottom: 3px;
+}
+
+/* Sprites */
 .sprite-container {
   display: inline-block;
-  margin-top: 10px;
+  margin: 8px 0;
 }
 
 .sprite-container svg {
@@ -44,31 +86,98 @@
   height: 100%;
 }
 
-.sprite-container.boss {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  padding: 10px;
+/* Health bars */
+.health-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #374151;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 5px;
 }
 
-.sprite-row {
+.health-bar-fill {
+  height: 100%;
+  transition: width 0.2s ease, background-color 0.2s ease;
+}
+
+/* Status indicators */
+.status-true {
+  color: #4ade80;
+  font-weight: bold;
+}
+
+.status-false {
+  color: #ef4444;
+  font-weight: bold;
+}
+
+/* Buttons */
+.button-row {
   display: flex;
-  gap: 20px;
+  gap: 10px;
   flex-wrap: wrap;
+}
+
+.button-row button {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  transition: background-color 0.2s ease;
+}
+
+.button-row button:hover {
+  background-color: #2563eb;
+}
+
+.button-row button:active {
+  background-color: #1d4ed8;
+}
+
+/* Mini Arena */
+.mini-arena {
+  position: relative;
+  border-radius: 4px;
   margin-top: 10px;
 }
 
-.sprite-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: #1a1a2e;
-  padding: 10px;
-  border-radius: 8px;
-  min-width: 70px;
+.entity-marker {
+  position: absolute;
+  transition: left 0.1s ease, top 0.1s ease;
 }
 
-.sprite-card p {
-  margin-bottom: 8px;
-  font-size: 0.75rem;
-  color: #9ca3af;
+.player-marker {
+  background-color: #4ade80;
+  border-radius: 50%;
+}
+
+.enemy-marker {
+  background-color: #ef4444;
+}
+
+.boss-marker {
+  background-color: #a855f7;
+}
+
+.arena-legend {
+  margin-top: 10px;
+  display: flex;
+  gap: 20px;
+}
+
+.legend-player {
+  color: #4ade80;
+}
+
+.legend-enemy {
+  color: #ef4444;
+}
+
+.legend-boss {
+  color: #a855f7;
 }
